@@ -3,6 +3,7 @@ use std::sync::Mutex;
 
 mod errors;
 mod state;
+mod scale;
 
 pub const TEST: usize = 5;
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
