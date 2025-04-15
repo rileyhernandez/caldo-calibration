@@ -1,19 +1,31 @@
-use libra::scale;
-use std::error::Error;
 use std::fmt::Debug;
+use libra::scale::ScaleError;
+use phidget::ReturnCode;
 use thiserror::Error;
+use serde::Serialize;
 
-// #[derive(Error)]
-// pub enum ScaleError {
-//     #[error("Failed to connect to Scale")]
-//     ConnectionError(#[from] scale::Error),
-// }
-// impl Debug for ScaleError {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         writeln!(f, "{}", self)?;
-//         if let Some(source) = self.source() {
-//             writeln!(f, "Caused by:\n\t{}", source)?;
-//         }
-//         Ok(())
-//     }
-// }
+#[derive(Error, Debug)]
+pub enum AppError {
+    #[error("No Scale Connected!")]
+    NoScale,
+    #[error("Scale Error")]
+    Libra(ScaleError),
+    #[error("Phidget Error")]
+    Phidget(ReturnCode),
+    #[error("Must Calibrate Scale to Use!")]
+    NotCalibrated,
+    #[error("Must have nonzero samples!")]
+    ZeroSamples,
+    #[error("HTTP Request Error")]
+    Reqwest(reqwest::Error),
+    #[error("Serialization Error")]
+    Serde(serde_json::Error)
+}
+impl Serialize for AppError {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::ser::Serializer,
+    {
+        serializer.serialize_str(self.to_string().as_ref())
+    }
+}

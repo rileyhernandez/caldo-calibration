@@ -37,28 +37,16 @@ function App() {
         }
     }
     async function calibrateScale() {
-        const result: string = await invoke("add_weight_trial", {samples: 10});
+        const result: string = await invoke("calibrate", {samples: 10});
         updateStatus(result);
     }
-    async function addWeightTrial(samples: number) {
+    async function addTrial(samples: number, weight: number) {
         try {
-            const result: string = await invoke("add_weight_trial", {samples});
+            const result: string = await invoke("add_trial", {samples, weight});
             updateStatus(result)
         } catch (error: any) {
             updateStatus(error)
         }
-    }
-    async function addZeroTrial(samples: number) {
-        try {
-            const result: string = await invoke("add_zero_trial", {samples});
-            updateStatus(result)
-        } catch (error: any) {
-            updateStatus(error)
-        }
-    }
-    async function getCalibrationData() {
-        const result: string = await invoke("get_calibration_data", {});
-        updateStatus(result)
     }
 
     return (
@@ -85,18 +73,10 @@ function App() {
                 <button
                     onClick={async (e) => {
                         e.preventDefault();
-                        await addWeightTrial(samples);
+                        await addTrial(samples, 28.7);
                     }}
                 >
                     Add Trial
-                </button>
-                <button
-                    onClick={async (e) => {
-                        e.preventDefault();
-                        await addZeroTrial(samples);
-                    }}
-                >
-                    Add Zero Trial
                 </button>
                 <button
                     onClick={async (e) => {
@@ -109,10 +89,10 @@ function App() {
                 <button
                     onClick={async (e) => {
                         e.preventDefault();
-                        await getCalibrationData();
+                        await calibrateScale();
                     }}
                 >
-                    Calibration Data
+                    Calibrate
                 </button>
             </div>
             <div className="row">
