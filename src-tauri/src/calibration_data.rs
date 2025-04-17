@@ -35,16 +35,6 @@ impl CalibrationData {
     }
 }
 
-#[derive(Debug, Clone, serde::Serialize)]
-pub struct PhidgetId {
-    phidget_id: i32
-}
-impl PhidgetId {
-    pub fn new(phidget_id: i32) -> Self {
-        Self { phidget_id }
-    }
-}
-
 #[derive(Deserialize)]
 pub struct Coefficients {
     coefficients: [f64; 4]

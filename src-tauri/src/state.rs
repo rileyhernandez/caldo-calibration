@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use http::header::CONTENT_TYPE;
 use libra::scale::ConnectedScale;
-use crate::calibration_data::{Trial, CalibrationData, PhidgetId, Coefficients};
+use crate::calibration_data::{Trial, CalibrationData, Coefficients};
 use crate::errors::AppError;
 
 
@@ -118,14 +118,10 @@ impl AppData {
     }
     pub fn get_coefficients_from_backend(&mut self) -> Result<String, AppError> {
         if let Some(scale) = &self.scale {
-            let payload = serde_json::to_string(&PhidgetId::new(scale.get_phidget_id())).map_err(AppError::Serde)?;
             let client = reqwest::blocking::Client::new();
-            // let url = "http://127.0.0.1:8080";
-            let url = "https://us-west1-calibration-backend.cloudfunctions.net/test-function";
+            let url = format!("https://us-west1-calibration-backend.cloudfunctions.net/test-function/{}", scale.get_phidget_id());
             let response = client
                 .get(url)
-                .header(CONTENT_TYPE, "application/json")
-                .body(payload)
                 .timeout(Duration::from_secs(60))
                 .send()
                 .map_err(AppError::Reqwest)?
