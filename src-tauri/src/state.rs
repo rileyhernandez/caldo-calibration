@@ -103,8 +103,8 @@ impl AppData {
     pub fn call_calibration_backend(&self) -> Result<String, AppError> {
         let calibration_data = self.get_calibration_data().ok_or(AppError::NoScale)?;
         let client = reqwest::blocking::Client::new();
-        let url = "http://127.0.0.1:8080";
-        // let url = "https://us-west1-calibration-backend.cloudfunctions.net/test-function";
+        // let url = "http://127.0.0.1:8080";
+        let url = "https://us-west1-calibration-backend.cloudfunctions.net/test-function";
         let payload = serde_json::to_string(&calibration_data).map_err(AppError::Serde)?;
         client
             .post(url) // Changed to POST request
@@ -120,8 +120,8 @@ impl AppData {
         if let Some(scale) = &self.scale {
             let payload = serde_json::to_string(&PhidgetId::new(scale.get_phidget_id())).map_err(AppError::Serde)?;
             let client = reqwest::blocking::Client::new();
-            let url = "http://127.0.0.1:8080";
-            // let url = "https://us-west1-calibration-backend.cloudfunctions.net/test-function";
+            // let url = "http://127.0.0.1:8080";
+            let url = "https://us-west1-calibration-backend.cloudfunctions.net/test-function";
             let response = client
                 .get(url)
                 .header(CONTENT_TYPE, "application/json")
