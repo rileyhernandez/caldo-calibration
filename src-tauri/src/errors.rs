@@ -3,6 +3,7 @@ use libra::scale::{PhidgetError, ScaleError};
 use phidget::ReturnCode;
 use thiserror::Error;
 use serde::Serialize;
+use log::error;
 
 #[derive(Error, Debug)]
 pub enum AppError {
@@ -26,6 +27,7 @@ impl Serialize for AppError {
     where
         S: serde::ser::Serializer,
     {
+        error!("{self}");
         serializer.serialize_str(self.to_string().as_ref())
     }
 }

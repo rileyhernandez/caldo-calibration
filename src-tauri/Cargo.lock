@@ -515,6 +515,7 @@ dependencies = [
  "control-components",
  "http",
  "libra",
+ "log",
  "phidget 0.2.0",
  "reqwest",
  "serde",

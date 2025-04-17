@@ -1,5 +1,6 @@
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use http::header::CONTENT_TYPE;
+use serde::Deserialize;
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct Trial {
@@ -31,5 +32,25 @@ impl CalibrationData {
     }
     pub fn get_trials(&self) -> Vec<Trial> {
         self.trials.clone()
+    }
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct PhidgetId {
+    phidget_id: i32
+}
+impl PhidgetId {
+    pub fn new(phidget_id: i32) -> Self {
+        Self { phidget_id }
+    }
+}
+
+#[derive(Deserialize)]
+pub struct Coefficients {
+    coefficients: [f64; 4]
+}
+impl Coefficients {
+    pub fn get_coefficients(&self) -> [f64; 4] {
+        self.coefficients
     }
 }

@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use http::header::CONTENT_TYPE;
 use libra::scale::ConnectedScale;
-use crate::calibration_data::{Trial, CalibrationData};
+use crate::calibration_data::{Trial, CalibrationData, PhidgetId, Coefficients};
 use crate::errors::AppError;
 
 
@@ -103,8 +103,8 @@ impl AppData {
     pub fn call_calibration_backend(&self) -> Result<String, AppError> {
         let calibration_data = self.get_calibration_data().ok_or(AppError::NoScale)?;
         let client = reqwest::blocking::Client::new();
-        // let url = "http://127.0.0.1:8080";
-        let url = "https://us-west1-calibration-backend.cloudfunctions.net/test-function";
+        let url = "http://127.0.0.1:8080";
+        // let url = "https://us-west1-calibration-backend.cloudfunctions.net/test-function";
         let payload = serde_json::to_string(&calibration_data).map_err(AppError::Serde)?;
         client
             .post(url) // Changed to POST request
@@ -115,6 +115,27 @@ impl AppData {
             .map_err(AppError::Reqwest)?
             .text()
             .map_err(AppError::Reqwest)
+    }
+    pub fn get_coefficients_from_backend(&mut self) -> Result<String, AppError> {
+        if let Some(scale) = &self.scale {
+            let payload = serde_json::to_string(&PhidgetId::new(scale.get_phidget_id())).map_err(AppError::Serde)?;
+            let client = reqwest::blocking::Client::new();
+            let url = "http://127.0.0.1:8080";
+            // let url = "https://us-west1-calibration-backend.cloudfunctions.net/test-function";
+            let response = client
+                .get(url)
+                .header(CONTENT_TYPE, "application/json")
+                .body(payload)
+                .timeout(Duration::from_secs(60))
+                .send()
+                .map_err(AppError::Reqwest)?
+                .text()
+                .map_err(AppError::Reqwest)?;
+            self.coefficients.replace(serde_json::from_str::<Coefficients>(&response).map_err(AppError::Serde)?.get_coefficients());
+            Ok(response)
+        } else {
+            Err(AppError::NoScale)
+        }
     }
 }
 impl fmt::Display for AppData {

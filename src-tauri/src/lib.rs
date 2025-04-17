@@ -13,10 +13,10 @@ fn check_app_data(state: tauri::State<'_, Mutex<AppData>>) -> String {
 }
 
 #[tauri::command]
-fn connect_scale(state: tauri::State<'_, Mutex<AppData>>) -> Result<String, String> {
+fn connect_scale(state: tauri::State<'_, Mutex<AppData>>) -> Result<String, AppError> {
     match state.lock().unwrap().connect_scale() {
-        Ok(_) => Ok(Message::ScaleConnected.string()),
-        Err(e) => Err(format!("{:?}", e))
+        Ok(_) => Ok("Scale Connected!".into()),
+        Err(e) => Err(e)
     }
 }
 
@@ -26,11 +26,8 @@ fn check_raw_readings(state: tauri::State<'_, Mutex<AppData>>) -> Result<Vec<f64
 }
 
 #[tauri::command]
-fn weigh_scale(state: tauri::State<'_, Mutex<AppData>>, samples: usize) -> Result<f64, String> {
-    match state.lock().unwrap().weigh_scale(samples) {
-        Ok(readings) => Ok(readings),
-        Err(e) => Err(format!("{:?}", e))
-    }
+fn weigh_scale(state: tauri::State<'_, Mutex<AppData>>, samples: usize) -> Result<f64, AppError> {
+    state.lock().unwrap().weigh_scale(samples)
 }
 
 #[tauri::command]
@@ -41,11 +38,14 @@ fn add_trial(state: tauri::State<'_, Mutex<AppData>>, samples: usize, weight: f6
 }
 
 #[tauri::command]
-fn calibrate(state: tauri::State<'_, Mutex<AppData>>) -> Result<String, ()> {
+fn calibrate(state: tauri::State<'_, Mutex<AppData>>) -> Result<String, AppError> {
     let state = state.lock().unwrap();
-    let response = state.call_calibration_backend();
+    state.call_calibration_backend()
+}
 
-    Ok(response.unwrap())
+#[tauri::command]
+fn get_coefficients(state: tauri::State<'_, Mutex<AppData>>) -> Result<String, AppError> {
+    state.lock().unwrap().get_coefficients_from_backend()
 }
 
 
@@ -60,7 +60,8 @@ pub fn run() {
             weigh_scale, 
             connect_scale, 
             add_trial,
-            calibrate
+            calibrate,
+            get_coefficients
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

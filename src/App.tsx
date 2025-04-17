@@ -48,6 +48,14 @@ function App() {
             updateStatus(error)
         }
     }
+    async function getCoefficients() {
+        try {
+            const result: string = await invoke("get_coefficients", {});
+            updateStatus(result);
+        } catch (error: any) {
+            updateStatus(error)
+        }
+    }
 
     return (
         <main className="container">
@@ -93,6 +101,14 @@ function App() {
                     }}
                 >
                     Calibrate
+                </button>
+                <button
+                    onClick={async (e) => {
+                        e.preventDefault();
+                        await getCoefficients();
+                    }}
+                >
+                    Get Coefficients
                 </button>
             </div>
             <div className="row">
