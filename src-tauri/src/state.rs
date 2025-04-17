@@ -74,7 +74,7 @@ impl AppData {
             .as_ref()
             .map(|scale| 
                 ConnectedScale::get_raw_readings(scale)
-                    .map_err(AppError::Phidget)).unwrap()
+                    .map_err(AppError::Libra)).unwrap()
     }
     pub fn get_raw_medians(&self, samples: usize) -> Result<[f64; 4], AppError> {
         if samples == 0 {
@@ -103,7 +103,8 @@ impl AppData {
     pub fn call_calibration_backend(&self) -> Result<String, AppError> {
         let calibration_data = self.get_calibration_data().ok_or(AppError::NoScale)?;
         let client = reqwest::blocking::Client::new();
-        let url = "http://127.0.0.1:8080";
+        // let url = "http://127.0.0.1:8080";
+        let url = "https://us-west1-calibration-backend.cloudfunctions.net/test-function";
         let payload = serde_json::to_string(&calibration_data).map_err(AppError::Serde)?;
         client
             .post(url) // Changed to POST request
