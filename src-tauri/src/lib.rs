@@ -1,11 +1,14 @@
-use crate::state::AppData;
-use std::sync::Mutex;
-use state::Message;
 use crate::errors::AppError;
+use crate::state::AppData;
+use log::info;
+use state::Message;
+use std::sync::Mutex;
+use serde::Serialize;
+use crate::calibration_data::Trial;
 
+mod calibration_data;
 mod errors;
 mod state;
-mod calibration_data;
 
 #[tauri::command]
 fn check_app_data(state: tauri::State<'_, Mutex<AppData>>) -> String {
@@ -16,7 +19,7 @@ fn check_app_data(state: tauri::State<'_, Mutex<AppData>>) -> String {
 fn connect_scale(state: tauri::State<'_, Mutex<AppData>>) -> Result<String, AppError> {
     match state.lock().unwrap().connect_scale() {
         Ok(_) => Ok("Scale Connected!".into()),
-        Err(e) => Err(e)
+        Err(e) => Err(e),
     }
 }
 
@@ -27,14 +30,20 @@ fn check_raw_readings(state: tauri::State<'_, Mutex<AppData>>) -> Result<Vec<f64
 
 #[tauri::command]
 fn weigh_scale(state: tauri::State<'_, Mutex<AppData>>, samples: usize) -> Result<f64, AppError> {
-    state.lock().unwrap().weigh_scale(samples)
+    let weight = state.lock().unwrap().weigh_scale(samples)?;
+    println!("Weight: {}", weight);
+    Ok(weight)
 }
 
 #[tauri::command]
-fn add_trial(state: tauri::State<'_, Mutex<AppData>>, samples: usize, weight: f64) -> Result<String, AppError> {
+fn add_trial(
+    state: tauri::State<'_, Mutex<AppData>>,
+    samples: usize,
+    weight: f64,
+) -> Result<String, AppError> {
     let mut state = state.lock().unwrap();
-    state.add_trial(samples, weight)?;
-    Ok(format!("{:?}", state.get_calibration_data()))
+    let trial = state.add_trial(samples, weight)?;
+    serde_json::to_string(&trial).map_err(AppError::Serde)
 }
 
 #[tauri::command]
@@ -48,17 +57,16 @@ fn get_coefficients(state: tauri::State<'_, Mutex<AppData>>) -> Result<String, A
     state.lock().unwrap().get_coefficients_from_backend()
 }
 
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .manage(Mutex::new(AppData::new()))
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
-            check_app_data, 
-            check_raw_readings, 
-            weigh_scale, 
-            connect_scale, 
+            check_app_data,
+            check_raw_readings,
+            weigh_scale,
+            connect_scale,
             add_trial,
             calibrate,
             get_coefficients

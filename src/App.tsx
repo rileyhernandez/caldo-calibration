@@ -7,6 +7,7 @@ function App() {
     const [currentStatus, updateStatus] = useState("");
     const [currentReading, updateReading] = useState("");
     const [samples, updateSamples] = useState(0);
+    const [weight, updateWeight] = useState(0);
 
     async function connectScale() {
         // try {
@@ -15,8 +16,15 @@ function App() {
         // } catch (error: any) {
         //     updateStatus(error);
         // }
-        const result: string = await invoke("connect_scale");
-        updateStatus(result);
+        try {
+            const result: string = await invoke("connect_scale");
+            updateStatus(result);
+        } catch (error: any) {
+            console.error("Error invoking command: ", error);
+            console.error("Error details: ", error);
+            updateStatus(error);
+        }
+
     }
     async function checkRawReadings() {
         try {
@@ -81,7 +89,7 @@ function App() {
                 <button
                     onClick={async (e) => {
                         e.preventDefault();
-                        await addTrial(samples, 28.7);
+                        await addTrial(samples, weight);
                     }}
                 >
                     Add Trial
@@ -112,9 +120,17 @@ function App() {
                 </button>
             </div>
             <div className="row">
+                <p>Samples:</p>
                 <input 
-                    type="number" value={samples} step={1000}
+                    type="number" value={samples} step={1000000}
                     onChange={(e) => {updateSamples(parseInt(e.target.value))}} 
+                />
+            </div>
+            <div className="row">
+                <p>Weight:</p>
+                <input
+                    type="number" value={weight} step={0.1}
+                    onChange={(e) => {updateWeight(parseFloat(e.target.value))}}
                 />
             </div>
             <p>Readings: {currentReading}</p>

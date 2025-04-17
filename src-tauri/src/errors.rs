@@ -1,9 +1,9 @@
-use std::fmt::Debug;
 use libra::scale::{PhidgetError, ScaleError};
-use phidget::ReturnCode;
-use thiserror::Error;
-use serde::Serialize;
 use log::error;
+use phidget::ReturnCode;
+use serde::Serialize;
+use std::fmt::Debug;
+use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum AppError {
@@ -20,7 +20,7 @@ pub enum AppError {
     #[error("HTTP Request Error: {0}")]
     Reqwest(reqwest::Error),
     #[error("Serialization Error: {0}")]
-    Serde(serde_json::Error)
+    Serde(serde_json::Error),
 }
 impl Serialize for AppError {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
