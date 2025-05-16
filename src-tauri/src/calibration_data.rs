@@ -1,14 +1,16 @@
-use http::header::CONTENT_TYPE;
+use std::sync::Mutex;
 use serde::Deserialize;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use crate::errors::AppError;
+use crate::state::AppData;
 
 #[derive(Debug, Clone, serde::Serialize)]
-pub struct Trial {
+pub struct CalibrationTrial {
     readings: Vec<f64>,
     weight: f64,
     timestamp: Duration,
 }
-impl Trial {
+impl CalibrationTrial {
     pub fn from_array(data: [f64; 4], weight: f64) -> Self {
         Self {
             readings: data.to_vec(),
@@ -16,11 +18,26 @@ impl Trial {
             timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap(),
         }
     }
+    pub fn new(state: tauri::State<'_, Mutex<AppData>>, samples: usize, weight: f64, sample_period: Duration) -> Result<Self, AppError> {
+        if samples == 0 {
+            return Err(AppError::ZeroSamples);
+        }
+        let mut scale = {
+            let mut state = state.lock().unwrap();
+            state.take_scale()?
+        };
+        // TODO: include sample rate!
+        scale.set_data_intervals(sample_period).map_err(AppError::Libra)?;
+        let readings = scale.get_load_cell_medians(samples, sample_period).map_err(AppError::Libra)?;
+        {
+            state.lock().unwrap().return_scale(scale)?;
+        }
+        Ok( Self::from_array(readings, weight))
+    }
 }
-
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct CalibrationData {
-    trials: Vec<Trial>,
+    trials: Vec<CalibrationTrial>,
     phidget_id: i32,
 }
 impl CalibrationData {
@@ -30,11 +47,8 @@ impl CalibrationData {
             phidget_id,
         }
     }
-    pub fn add_trial(&mut self, trial: Trial) {
+    pub fn add_trial(&mut self, trial: CalibrationTrial) {
         self.trials.push(trial);
-    }
-    pub fn get_trials(&self) -> Vec<Trial> {
-        self.trials.clone()
     }
 }
 

@@ -1,12 +1,15 @@
+use crate::backend::Backend;
+use crate::data::DataRequest;
 use crate::errors::AppError;
 use crate::state::AppData;
-use log::info;
-use state::Message;
+use node_diagnostics::data::Data;
 use std::sync::Mutex;
-use serde::Serialize;
-use crate::calibration_data::Trial;
+use std::time::Duration;
+use crate::calibration_data::CalibrationTrial;
 
+mod backend;
 mod calibration_data;
+mod data;
 mod errors;
 mod state;
 
@@ -15,7 +18,7 @@ fn check_app_data(state: tauri::State<'_, Mutex<AppData>>) -> String {
     format!("{:}", state.lock().unwrap())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn connect_scale(state: tauri::State<'_, Mutex<AppData>>) -> Result<String, AppError> {
     match state.lock().unwrap().connect_scale() {
         Ok(_) => Ok("Scale Connected!".into()),
@@ -23,38 +26,52 @@ fn connect_scale(state: tauri::State<'_, Mutex<AppData>>) -> Result<String, AppE
     }
 }
 
-#[tauri::command]
-fn check_raw_readings(state: tauri::State<'_, Mutex<AppData>>) -> Result<Vec<f64>, AppError> {
-    state.lock().unwrap().raw_scale_readings()
-}
-
-#[tauri::command]
-fn weigh_scale(state: tauri::State<'_, Mutex<AppData>>, samples: usize) -> Result<f64, AppError> {
-    let weight = state.lock().unwrap().weigh_scale(samples)?;
-    println!("Weight: {}", weight);
-    Ok(weight)
-}
-
-#[tauri::command]
+#[tauri::command(async)]
 fn add_trial(
     state: tauri::State<'_, Mutex<AppData>>,
     samples: usize,
     weight: f64,
+    sample_period: Duration,
 ) -> Result<String, AppError> {
-    let mut state = state.lock().unwrap();
-    let trial = state.add_trial(samples, weight)?;
+    let new_trial = CalibrationTrial::new(state.clone(), samples, weight, sample_period)?;
+    let trial = state.lock().unwrap().add_calibration_trial(new_trial)?;
     serde_json::to_string(&trial).map_err(AppError::Serde)
 }
 
-#[tauri::command]
-fn calibrate(state: tauri::State<'_, Mutex<AppData>>) -> Result<String, AppError> {
-    let state = state.lock().unwrap();
-    state.call_calibration_backend()
+#[tauri::command(async)]
+async fn calibrate(state: tauri::State<'_, Mutex<AppData>>) -> Result<String, AppError> {
+    Backend::calibrate(state).await
 }
 
+#[tauri::command(async)]
+async fn get_coefficients(state: tauri::State<'_, Mutex<AppData>>) -> Result<String, AppError> {
+    Backend::get_coefficients(state).await
+}
+
+#[tauri::command(async)]
+fn plot(
+    state: tauri::State<'_, Mutex<AppData>>,
+    data_request: DataRequest,
+) -> Result<Data, AppError> {
+    let mut state = state.lock().unwrap();
+    let scale = state.get_mut_scale_ref().ok_or(AppError::NoScale)?;
+    data_request.conduct(scale)
+}
+
+#[tauri::command(async)]
+fn enable_motor(state: tauri::State<'_, Mutex<AppData>>) -> Result<(), AppError> {
+    state.lock().unwrap().enable_motor(0)
+    // Err(AppError::NotImplemented)
+}
 #[tauri::command]
-fn get_coefficients(state: tauri::State<'_, Mutex<AppData>>) -> Result<String, AppError> {
-    state.lock().unwrap().get_coefficients_from_backend()
+fn disable_motor(state: tauri::State<'_, Mutex<AppData>>) -> Result<(), AppError> {
+    state.lock().unwrap().disable_motor(0)
+    // Err(AppError::NotImplemented)
+}
+#[tauri::command]
+fn conduct_trial(state: tauri::State<'_, Mutex<AppData>>) -> Result<(), AppError> {
+    state.lock().unwrap().conduct_node_trial()?;
+    Ok(())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -64,12 +81,14 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             check_app_data,
-            check_raw_readings,
-            weigh_scale,
             connect_scale,
             add_trial,
             calibrate,
-            get_coefficients
+            get_coefficients,
+            plot,
+            enable_motor,
+            disable_motor,
+            conduct_trial
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

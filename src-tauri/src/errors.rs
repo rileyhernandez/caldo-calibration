@@ -1,6 +1,6 @@
-use libra::scale::{PhidgetError, ScaleError};
+use libra::scale::ScaleError;
 use log::error;
-use phidget::ReturnCode;
+// use phidget::ReturnCode;
 use serde::Serialize;
 use std::fmt::Debug;
 use thiserror::Error;
@@ -11,16 +11,28 @@ pub enum AppError {
     NoScale,
     #[error("Scale Error: {0}")]
     Libra(ScaleError),
-    #[error("Phidget Error: {0}")]
-    Phidget(PhidgetError),
-    #[error("Must Calibrate Scale to Use!")]
-    NotCalibrated,
+    // #[error("Phidget Error: {0}")]
+    // Phidget(PhidgetError),
+    // #[error("Must Calibrate Scale to Use!")]
+    // NotCalibrated,
     #[error("Must have nonzero samples!")]
     ZeroSamples,
     #[error("HTTP Request Error: {0}")]
     Reqwest(reqwest::Error),
     #[error("Serialization Error: {0}")]
     Serde(serde_json::Error),
+    #[error("This feature is not yet implemented!")]
+    NotImplemented,
+    #[error("Clear Core IO Error: {0}")]
+    ClearCoreIo(std::io::Error),
+    #[error("Clear Core Error: {0}")]
+    ClearCore(clear_core::controller::clear_core::Error),
+    #[error("Node Diagnostics Error: {0}")]
+    NodeDiagnostics(node_diagnostics::error::Error),
+    #[error("Scale already exists!")]
+    ScaleExists,
+    #[error("Other Error: {0}")]
+    Other(String),
 }
 impl Serialize for AppError {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
