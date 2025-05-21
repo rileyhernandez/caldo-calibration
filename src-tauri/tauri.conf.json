@@ -12,9 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "caldo-calibration",
-        "width": 600,
-        "height": 1024
+        "title": "caldo-calibration"
       }
     ],
     "security": {
