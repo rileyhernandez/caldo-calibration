@@ -22,12 +22,11 @@ impl CalibrationTrial {
         if samples == 0 {
             return Err(AppError::ZeroSamples);
         }
-        let mut scale = {
+        let scale = {
             let mut state = state.lock().unwrap();
             state.take_scale()?
         };
         // TODO: include sample rate!
-        scale.set_data_intervals(sample_period).map_err(AppError::Libra)?;
         let readings = scale.get_load_cell_medians(samples, sample_period).map_err(AppError::Libra)?;
         {
             state.lock().unwrap().return_scale(scale)?;

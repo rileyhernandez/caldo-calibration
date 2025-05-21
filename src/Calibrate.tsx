@@ -16,7 +16,7 @@ function App() {
         updateStatus("Calibrating...");
         const result: string = await invoke("calibrate", {});
         updateStatus(result);
-        navigate("/read");
+        navigate("/connect");
     }
     async function addTrial(samples: number, weight: number) {
         updateStatus("Collecting data...");
@@ -99,9 +99,6 @@ function App() {
             <section className="data-display">
                 <div className="data-item">
                     <strong>Status:</strong> {currentStatus}
-                </div>
-                <div className="data-item">
-                    <strong>Current Samples:</strong> {samples}
                 </div>
             </section>
 

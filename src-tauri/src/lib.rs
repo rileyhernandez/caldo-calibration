@@ -57,6 +57,10 @@ fn plot(
     let scale = state.get_mut_scale_ref().ok_or(AppError::NoScale)?;
     data_request.conduct(scale)
 }
+#[tauri::command(async)]
+fn set_phidget_interval(state: tauri::State<'_, Mutex<AppData>>, sample_period: Duration) -> Result<(), AppError> {
+    state.lock().unwrap().get_mut_scale_ref().ok_or(AppError::NoScale)?.set_data_intervals(sample_period).map_err(AppError::Libra)
+}
 
 #[tauri::command(async)]
 fn enable_motor(state: tauri::State<'_, Mutex<AppData>>) -> Result<(), AppError> {
@@ -74,6 +78,7 @@ fn conduct_trial(state: tauri::State<'_, Mutex<AppData>>) -> Result<(), AppError
     Ok(())
 }
 
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -88,7 +93,8 @@ pub fn run() {
             plot,
             enable_motor,
             disable_motor,
-            conduct_trial
+            conduct_trial,
+            set_phidget_interval
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
