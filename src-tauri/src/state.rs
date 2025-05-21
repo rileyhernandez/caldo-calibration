@@ -45,7 +45,8 @@ impl AppData {
             println!("Already connected!");
             return Ok(());
         }
-        let scale = ConnectedScale::without_id(Duration::from_secs(3)).map_err(AppError::Libra)?;
+        let mut scale = ConnectedScale::without_id(Duration::from_secs(3)).map_err(AppError::Libra)?;
+        scale.set_data_intervals(Duration::from_millis(40)).map_err(AppError::Libra)?;
         self.calibration_data
             .replace(CalibrationData::new(scale.get_phidget_id()));
         self.scale.replace(scale);
