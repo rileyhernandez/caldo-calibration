@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react"; // Added useRef and useEffe
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 import { useNavigate } from "react-router";
+import sleepForDenoise from "./utils.ts";
 
 function App() {
     const [currentStatus, updateStatus] = useState("");
@@ -32,11 +33,12 @@ function App() {
     }
 
     async function addTrial(currentSamples: number, currentWeight: number) {
-        // Estimate total time for the trial based on samples and samplePeriod
-        // samplePeriod is in ms, so totalTime will be in ms
+        updateStatus("Collecting data...");
+        await sleepForDenoise();
+
         const totalTime = currentSamples * samplePeriod;
 
-        updateStatus("Collecting data...");
+
         setIsAddingTrial(true);
         setTrialProgress(0);
 

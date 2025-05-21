@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 import Plot from './plot';
+import sleepForDenoise from "./utils.ts";
 
 function App() {
     interface DataRequest {
@@ -23,9 +24,9 @@ function App() {
     const [currentWeight, updateWeight] = useState(0);
     const [tare, updateTare] = useState(0);
 
-    const [samples, updateSamples] = useState(0);
-    const [samplePeriod, updateSamplePeriod] = useState(40);
-    const [cutoffFrequency, updateCutoffFrequency] = useState(0);
+    const [samples, updateSamples] = useState(200);
+    const [samplePeriod, updateSamplePeriod] = useState(80);
+    const [cutoffFrequency, updateCutoffFrequency] = useState(2);
     const [phidgetSamplePeriod, updatePhidgetSamplePeriod] = useState(40);
 
     const [xPlotValues, setXPlotValues] = useState<number[]>([1.0, 2.5, 3, 4]);
@@ -42,15 +43,19 @@ function App() {
     async function setPhidgetInterval() {
         try {
             const result: string = await invoke("set_phidget_interval", {samplePeriod: {secs: 0, nanos: phidgetSamplePeriod*1000000}})
-            updateStatus(result);
+            updateStatus("Data Interval Set!");
+            console.log(result);
         } catch (e: any) {
             updateStatus(String(e));
         }
     }
 
     async function plotData(dataRequest: DataRequest) {
-        const totalTime = dataRequest.samples * (dataRequest.sample_period.secs + dataRequest.sample_period.nanos / 1_000_000_000) * 1000; // in milliseconds
         updateStatus("Conducting trial...");
+        await sleepForDenoise();
+
+        const totalTime = dataRequest.samples * (dataRequest.sample_period.secs + dataRequest.sample_period.nanos / 1_000_000_000) * 1000; // in milliseconds
+
         setIsPlotting(true);
         setProgress(0);
 
