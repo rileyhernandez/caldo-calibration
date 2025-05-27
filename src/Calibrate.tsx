@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react"; // Added useRef and useEffe
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 import { useNavigate } from "react-router";
-import sleepForDenoise from "./utils.ts";
+import { sleepForDenoise, enableMotor, disableMotor } from "./utils.ts";
 
 function App() {
     const [currentStatus, updateStatus] = useState("");
@@ -17,8 +17,6 @@ function App() {
 
     const navigate = useNavigate();
 
-    // General loading state for other operations (optional, can be removed if only addTrial needs a loader)
-    const [isProcessing, setIsProcessing] = useState(false);
 
 
     async function calibrateScale() {
@@ -84,32 +82,6 @@ function App() {
         }
     }
 
-    async function enableMotor() {
-        setIsProcessing(true); // Use general loader
-        updateStatus("Enabling motor...");
-        try {
-            await invoke("enable_motor", {});
-            updateStatus("Motor enabled!");
-        } catch (error: any) {
-            updateStatus(String(error));
-        } finally {
-            setIsProcessing(false);
-        }
-    }
-
-    async function disableMotor() {
-        setIsProcessing(true); // Use general loader
-        updateStatus("Disabling motor...");
-        try {
-            await invoke("disable_motor", {});
-            updateStatus("Motor disabled!");
-        } catch (error: any) {
-            updateStatus(String(error));
-        } finally {
-            setIsProcessing(false);
-        }
-    }
-
     // Cleanup interval on component unmount
     useEffect(() => {
         return () => {
@@ -133,22 +105,16 @@ function App() {
                 </div>
             )}
 
-            {/* Optional: General loading indicator for other operations */}
-            {isProcessing && !isAddingTrial && (
-                <div className="loading-indicator-container">
-                    <div className="loading-bar-placeholder">Processing...</div>
-                </div>
-            )}
 
             <section className="controls">
                 <div className="button-grid">
-                    <button onClick={enableMotor} disabled={isAddingTrial || isProcessing}>Enable Motor</button>
-                    <button onClick={disableMotor} disabled={isAddingTrial || isProcessing}>Disable Motor</button>
+                    <button onClick={async () => {await enableMotor(updateStatus)}} disabled={isAddingTrial}>Enable Motor</button>
+                    <button onClick={async () => { await disableMotor(updateStatus) }} disabled={isAddingTrial}>Disable Motor</button>
                 </div>
             </section>
             <section className="controls">
                 <div className="button-grid">
-                    <button onClick={() => addTrial(samples, weight)} disabled={isAddingTrial || isProcessing}>Add Trial</button>
+                    <button onClick={() => addTrial(samples, weight)} disabled={isAddingTrial}>Add Trial</button>
                 </div>
             </section>
 
@@ -161,7 +127,7 @@ function App() {
                         value={samples}
                         step={10_000}
                         onChange={(e) => updateSamples(parseInt(e.target.value))}
-                        disabled={isAddingTrial || isProcessing}
+                        disabled={isAddingTrial}
                     />
                 </div>
                 <div className="input-group">
@@ -172,7 +138,7 @@ function App() {
                         value={samplePeriod}
                         step={5}
                         onChange={(e) => updateSamplePeriod(parseInt(e.target.value))}
-                        disabled={isAddingTrial || isProcessing}
+                        disabled={isAddingTrial}
                     />
                 </div>
                 <div className="input-group">
@@ -183,7 +149,7 @@ function App() {
                         value={weight}
                         step={0.1}
                         onChange={(e) => updateWeight(parseFloat(e.target.value))}
-                        disabled={isAddingTrial || isProcessing}
+                        disabled={isAddingTrial}
                     />
                 </div>
             </section>
@@ -196,7 +162,7 @@ function App() {
 
             <section className="controls">
                 <div className="button-grid">
-                    <button onClick={calibrateScale} disabled={isAddingTrial || isProcessing}>Finish Calibration</button>
+                    <button onClick={calibrateScale} disabled={isAddingTrial}>Finish Calibration</button>
                 </div>
             </section>
         </main>

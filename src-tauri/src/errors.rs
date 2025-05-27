@@ -1,6 +1,7 @@
 use libra::scale::ScaleError;
 use log::error;
 // use phidget::ReturnCode;
+use anyhow;
 use serde::Serialize;
 use std::fmt::Debug;
 use thiserror::Error;
@@ -23,10 +24,8 @@ pub enum AppError {
     Serde(serde_json::Error),
     #[error("This feature is not yet implemented!")]
     NotImplemented,
-    #[error("Clear Core IO Error: {0}")]
-    ClearCoreIo(std::io::Error),
-    #[error("Clear Core Error: {0}")]
-    ClearCore(clear_core::controller::clear_core::Error),
+    #[error("")]
+    Anyhow(anyhow::Error),
     #[error("Node Diagnostics Error: {0}")]
     NodeDiagnostics(node_diagnostics::error::Error),
     #[error("Scale already exists!")]

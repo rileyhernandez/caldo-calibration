@@ -1,8 +1,8 @@
-use std::sync::Mutex;
-use serde::Deserialize;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use crate::errors::AppError;
 use crate::state::AppData;
+use serde::Deserialize;
+use std::sync::Mutex;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct CalibrationTrial {
@@ -18,7 +18,12 @@ impl CalibrationTrial {
             timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap(),
         }
     }
-    pub fn new(state: tauri::State<'_, Mutex<AppData>>, samples: usize, weight: f64, sample_period: Duration) -> Result<Self, AppError> {
+    pub fn new(
+        state: tauri::State<'_, Mutex<AppData>>,
+        samples: usize,
+        weight: f64,
+        sample_period: Duration,
+    ) -> Result<Self, AppError> {
         if samples == 0 {
             return Err(AppError::ZeroSamples);
         }
@@ -27,11 +32,13 @@ impl CalibrationTrial {
             state.take_scale()?
         };
         // TODO: include sample rate!
-        let readings = scale.get_load_cell_medians(samples, sample_period).map_err(AppError::Libra)?;
+        let readings = scale
+            .get_load_cell_medians(samples, sample_period)
+            .map_err(AppError::Libra)?;
         {
             state.lock().unwrap().return_scale(scale)?;
         }
-        Ok( Self::from_array(readings, weight))
+        Ok(Self::from_array(readings, weight))
     }
 }
 #[derive(Debug, Clone, serde::Serialize)]

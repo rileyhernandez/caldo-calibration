@@ -1,15 +1,17 @@
 use crate::backend::Backend;
+use crate::calibration_data::CalibrationTrial;
 use crate::data::DataRequest;
+use crate::dispenser::{DispenseSettings, Dispenser};
 use crate::errors::AppError;
 use crate::state::AppData;
 use node_diagnostics::data::Data;
 use std::sync::Mutex;
 use std::time::Duration;
-use crate::calibration_data::CalibrationTrial;
 
 mod backend;
 mod calibration_data;
 mod data;
+mod dispenser;
 mod errors;
 mod state;
 
@@ -58,26 +60,51 @@ fn plot(
     data_request.conduct(scale)
 }
 #[tauri::command(async)]
-fn set_phidget_interval(state: tauri::State<'_, Mutex<AppData>>, sample_period: Duration) -> Result<(), AppError> {
-    state.lock().unwrap().get_mut_scale_ref().ok_or(AppError::NoScale)?.set_data_intervals(sample_period).map_err(AppError::Libra)
+fn set_phidget_interval(
+    state: tauri::State<'_, Mutex<AppData>>,
+    sample_period: Duration,
+) -> Result<(), AppError> {
+    state
+        .lock()
+        .unwrap()
+        .get_mut_scale_ref()
+        .ok_or(AppError::NoScale)?
+        .set_data_intervals(sample_period)
+        .map_err(AppError::Libra)
 }
 
-#[tauri::command(async)]
-fn enable_motor(state: tauri::State<'_, Mutex<AppData>>) -> Result<(), AppError> {
-    state.lock().unwrap().enable_motor(0)
-    // Err(AppError::NotImplemented)
+#[tauri::command]
+async fn enable_motor(state: tauri::State<'_, Mutex<AppData>>) -> Result<(), AppError> {
+    let motor = { state.lock().unwrap().get_motor(0) };
+    motor.enable().await.map_err(AppError::Anyhow)
 }
 #[tauri::command]
-fn disable_motor(state: tauri::State<'_, Mutex<AppData>>) -> Result<(), AppError> {
-    state.lock().unwrap().disable_motor(0)
-    // Err(AppError::NotImplemented)
+async fn disable_motor(state: tauri::State<'_, Mutex<AppData>>) -> Result<(), AppError> {
+    let motor = { state.lock().unwrap().get_motor(0) };
+    motor.disable().await.map_err(AppError::Anyhow)
 }
 #[tauri::command]
-fn conduct_trial(state: tauri::State<'_, Mutex<AppData>>) -> Result<(), AppError> {
-    state.lock().unwrap().conduct_node_trial()?;
+async fn move_motor(state: tauri::State<'_, Mutex<AppData>>) -> Result<(), AppError> {
+    let motor = { state.lock().unwrap().get_motor(0) };
+    motor.relative_move(1000.).await.map_err(AppError::Anyhow)?;
     Ok(())
 }
-
+#[tauri::command]
+async fn dispense(state: tauri::State<'_, Mutex<AppData>>, dispense_settings: DispenseSettings) -> Result<Data, AppError> {
+    // println!("DEBUG: {:?}", dispense_settings);
+    let (scale, motor) = {
+        let mut state = state.lock().unwrap();
+        let scale = state.take_scale()?;
+        let motor = state.get_motor(0);
+        (scale, motor)
+    };
+    // let settings = DispenseSettings::default();
+    motor.enable().await.map_err(AppError::Anyhow)?;
+    let (data, scale) = Dispenser::dispense(&motor, scale, dispense_settings).await?;
+    state.lock().unwrap().return_scale(scale)?;
+    Ok(data)
+    // Err(AppError::NotImplemented)
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -93,8 +120,9 @@ pub fn run() {
             plot,
             enable_motor,
             disable_motor,
-            conduct_trial,
-            set_phidget_interval
+            set_phidget_interval,
+            dispense,
+            move_motor
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

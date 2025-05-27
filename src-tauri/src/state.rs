@@ -1,17 +1,17 @@
 use crate::calibration_data::{CalibrationData, CalibrationTrial, Coefficients};
 use crate::errors::AppError;
-use clear_core::controller::clear_core::Controller;
-use clear_core::controller::motor::Motor;
+use async_clear_core::controller::ControllerHandle;
+use async_clear_core::motor::{ClearCoreMotor, MotorBuilder};
 use libra::scale::ConnectedScale;
 use node_diagnostics::trial::Trial as NodeTrial;
-use std::fmt;
 use std::time::Duration;
+use std::{array, fmt};
 
 pub struct AppData {
     scale: Option<ConnectedScale>,
     coefficients: Option<[f64; 4]>,
     calibration_data: Option<CalibrationData>,
-    controller: Option<Controller>,
+    controller: Option<ControllerHandle>,
 }
 impl AppData {
     pub fn new() -> Self {
@@ -45,8 +45,11 @@ impl AppData {
             println!("Already connected!");
             return Ok(());
         }
-        let mut scale = ConnectedScale::without_id(Duration::from_secs(3)).map_err(AppError::Libra)?;
-        scale.set_data_intervals(Duration::from_millis(40)).map_err(AppError::Libra)?;
+        let mut scale =
+            ConnectedScale::without_id(Duration::from_secs(3)).map_err(AppError::Libra)?;
+        scale
+            .set_data_intervals(Duration::from_millis(40))
+            .map_err(AppError::Libra)?;
         self.calibration_data
             .replace(CalibrationData::new(scale.get_phidget_id()));
         self.scale.replace(scale);
@@ -75,7 +78,10 @@ impl AppData {
         Err(AppError::NotImplemented)
     }
 
-    pub fn add_calibration_trial(&mut self, calibration_trial: CalibrationTrial) -> Result<CalibrationTrial, AppError> {
+    pub fn add_calibration_trial(
+        &mut self,
+        calibration_trial: CalibrationTrial,
+    ) -> Result<CalibrationTrial, AppError> {
         if let Some(mut calibration_data) = self.calibration_data.take() {
             calibration_data.add_trial(calibration_trial.clone());
             self.calibration_data.replace(calibration_data);
@@ -84,22 +90,14 @@ impl AppData {
             Err(AppError::NoScale)
         }
     }
-    fn get_controller(&mut self) -> Result<&mut Controller, AppError> {
-        Ok(self
-            .controller
-            .get_or_insert(Controller::new("192.168.1.12:8888").map_err(AppError::ClearCoreIo)?))
+    fn get_controller(&mut self) -> &ControllerHandle {
+        self.controller.get_or_insert(ControllerHandle::new(
+            "192.168.1.12:8888",
+            array::from_fn(|_| MotorBuilder { id: 0, scale: 800 }),
+        ))
     }
-    // pub fn get_motor(&mut self, id: u8, steps: usize) -> Result<Motor, AppError> {
-    //     self.get_controller()
-    //         .map(|_cc| Motor::new(id, steps))
-    // }
-    pub fn enable_motor(&mut self, id: u8) -> Result<(), AppError> {
-        self.get_controller()
-            .map(|cc| Motor::new(id, 800).enable(cc).map_err(AppError::ClearCore))?
-    }
-    pub fn disable_motor(&mut self, id: u8) -> Result<(), AppError> {
-        self.get_controller()
-            .map(|cc| Motor::new(id, 800).disable(cc).map_err(AppError::ClearCore))?
+    pub fn get_motor(&mut self, id: usize) -> ClearCoreMotor {
+        self.get_controller().get_motor(id)
     }
     pub fn take_scale(&mut self) -> Result<ConnectedScale, AppError> {
         self.scale.take().ok_or(AppError::NoScale)

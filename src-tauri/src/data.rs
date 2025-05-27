@@ -23,7 +23,9 @@ pub struct DataRequest {
 impl DataRequest {
     pub fn conduct(self, scale: &mut ConnectedScale) -> Result<Data, AppError> {
         let trial = self.to_node_trial()?;
-        scale.set_data_intervals(self.sample_period).map_err(AppError::Libra)?;
+        scale
+            .set_data_intervals(self.sample_period)
+            .map_err(AppError::Libra)?;
         let mut data = trial.conduct(scale).map_err(AppError::NodeDiagnostics)?;
         // TODO: figure out how to remove this in node-diagnostics
         if !data.readings.is_empty() {
