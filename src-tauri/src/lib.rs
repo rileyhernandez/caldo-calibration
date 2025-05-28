@@ -91,7 +91,7 @@ async fn move_motor(state: tauri::State<'_, Mutex<AppData>>) -> Result<(), AppEr
 }
 #[tauri::command]
 async fn dispense(state: tauri::State<'_, Mutex<AppData>>, dispense_settings: DispenseSettings) -> Result<Data, AppError> {
-    // println!("DEBUG: {:?}", dispense_settings);
+    println!("DEBUG: {:?}", dispense_settings);
     let (scale, motor) = {
         let mut state = state.lock().unwrap();
         let scale = state.take_scale()?;

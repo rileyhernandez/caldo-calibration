@@ -24,7 +24,9 @@ function App() {
         cutoff_frequency: number;
         check_offset: number;
         weight: number;
-        starting_velocity: number;
+        max_velocity: number;
+        min_velocity: number;
+        timeout: Duration;
     }
 
     /*
@@ -46,8 +48,10 @@ function App() {
     const [cutoffFrequency, updateCutoffFrequency] = useState(2);
     const [phidgetSamplePeriod, updatePhidgetSamplePeriod] = useState(40);
     const [dispenseWeight, setDispenseWeight] = useState(50); // New state for dispense weight
-    const [startingVelocity, setStartingVelocity] = useState(0.5); // New state for starting velocity
+    const [maxVelocity, setMaxVelocity] = useState(0.5); // New state for starting velocity
+    const [minVelocity, setMinVelocity] = useState(0.1);
     const [checkOffset, setCheckOffset] = useState(5);
+    const [timeout, setTimeout] = useState(30);
 
 
     const [xPlotValues, setXPlotValues] = useState<number[]>([]);
@@ -175,7 +179,9 @@ function App() {
             cutoff_frequency: cutoffFrequency,
             check_offset: checkOffset,
             weight: dispenseWeight,
-            starting_velocity: startingVelocity,
+            max_velocity: maxVelocity,
+            min_velocity: minVelocity,
+            timeout: {secs: timeout, nanos: 0}
         }
         await dispense(dataRequest, dispenseSettings);
     }
@@ -373,14 +379,25 @@ function App() {
                         disabled={isPlotting}
                         style={{ width: '100px' }}
                     />
-                    <label htmlFor="startingVelocity">Starting Velocity:</label>
+                    <label htmlFor="maxVelocity">Max Velocity:</label>
                     <input
                         type="number"
-                        id="startingVelocity"
-                        value={startingVelocity}
+                        id="maxVelocity"
+                        value={maxVelocity}
                         step={0.1}
                         min={0.1}
-                        onChange={(e) => setStartingVelocity(parseFloat(e.target.value))}
+                        onChange={(e) => setMaxVelocity(parseFloat(e.target.value))}
+                        disabled={isPlotting}
+                        style={{ width: '100px' }}
+                    />
+                    <label htmlFor="minVelocity">Min Velocity:</label>
+                    <input
+                        type="number"
+                        id="minVelocity"
+                        value={minVelocity}
+                        step={0.1}
+                        min={0.1}
+                        onChange={(e) => setMinVelocity(parseFloat(e.target.value))}
                         disabled={isPlotting}
                         style={{ width: '100px' }}
                     />
@@ -392,6 +409,17 @@ function App() {
                         step={1}
                         min={0}
                         onChange={(e) => setCheckOffset(parseFloat(e.target.value))}
+                        disabled={isPlotting}
+                        style={{ width: '100px' }}
+                    />
+                    <label htmlFor="timeout">Timeout:</label>
+                    <input
+                        type="number"
+                        id="timeout"
+                        value={timeout}
+                        step={10}
+                        min={0}
+                        onChange={(e) => setTimeout(parseInt(e.target.value))}
                         disabled={isPlotting}
                         style={{ width: '100px' }}
                     />
