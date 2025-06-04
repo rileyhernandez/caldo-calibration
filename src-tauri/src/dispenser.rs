@@ -1,5 +1,5 @@
 use crate::errors::AppError;
-use async_clear_core::{controller::ControllerHandle, motor::ClearCoreMotor};
+use async_clear_core::{motor::ClearCoreMotor};
 use libra::scale::ConnectedScale;
 use node_diagnostics::{data::Data, filter::Filter};
 use std::time::Duration;
@@ -23,23 +23,24 @@ impl Dispenser {
         let mut data = Data::new(10000);
         let sample_rate = 1. / settings.sample_period.as_secs_f64();
         let mut filter = Filter::new(sample_rate, settings.cutoff_frequency);
-        // let starting_weight = scale
-        //     .get_median_weight(100, settings.sample_period)
-        //     .map_err(AppError::Libra)?
-        //     .get();
-        // // TODO: figure out what to do with this...
-        // filter.apply(starting_weight);
-        let mut interval = tokio::time::interval(settings.sample_period);
-        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
-        motor.relative_move(1000.).await.map_err(AppError::Anyhow)?;
-        let mut last_speed_update = tokio::time::Instant::now();
-
         let starting_weight = scale
-            .get_median_weight(10, settings.sample_period)
+            .get_median_weight(100, settings.sample_period)
             .map_err(AppError::Libra)?
             .get();
         // TODO: figure out what to do with this...
         filter.apply(starting_weight);
+        
+        let mut interval = tokio::time::interval(settings.sample_period);
+        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+        motor.relative_move(1000.).await.map_err(AppError::Anyhow)?;
+        let mut last_speed_update = tokio::time::Instant::now();
+        
+        // let starting_weight = scale
+        //     .get_median_weight(10, settings.sample_period)
+        //     .map_err(AppError::Libra)?
+        //     .get();
+        // // TODO: figure out what to do with this...
+        // filter.apply(starting_weight);
         
         let start_time = tokio::time::Instant::now();
         let mut checks_made = 0;

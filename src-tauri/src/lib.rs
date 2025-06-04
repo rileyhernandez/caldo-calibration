@@ -7,6 +7,7 @@ use crate::state::AppData;
 use node_diagnostics::data::Data;
 use std::sync::Mutex;
 use std::time::Duration;
+use tauri::State;
 
 mod backend;
 mod calibration_data;
@@ -86,7 +87,7 @@ async fn disable_motor(state: tauri::State<'_, Mutex<AppData>>) -> Result<(), Ap
 #[tauri::command]
 async fn move_motor(state: tauri::State<'_, Mutex<AppData>>) -> Result<(), AppError> {
     let motor = { state.lock().unwrap().get_motor(0) };
-    motor.relative_move(1000.).await.map_err(AppError::Anyhow)?;
+    motor.relative_move(10.).await.map_err(AppError::Anyhow)?;
     Ok(())
 }
 #[tauri::command]
@@ -105,6 +106,19 @@ async fn dispense(state: tauri::State<'_, Mutex<AppData>>, dispense_settings: Di
     Ok(data)
     // Err(AppError::NotImplemented)
 }
+#[tauri::command(async)]
+fn drop_scale(state: State<'_, Mutex<AppData>>) -> Result<(), AppError> {
+    let mut state = state.lock().unwrap();
+    let _ = state.take_scale()?;
+    Ok(())
+}
+#[tauri::command(async)]
+fn setup_raw_data_collection(state: State<'_, Mutex<AppData>>) -> Result<(), AppError> {
+    let mut state = state.lock().unwrap();
+    let scale = state.take_scale()?;
+    // TODO: need to implement this up a crate...
+    Err(AppError::NotImplemented)
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -122,7 +136,9 @@ pub fn run() {
             disable_motor,
             set_phidget_interval,
             dispense,
-            move_motor
+            move_motor,
+            drop_scale,
+            setup_raw_data_collection
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

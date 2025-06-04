@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
-import Plot from './plot';
-import {disableMotor, enableMotor, sleepForDenoise} from "./utils.ts";
+import Plot, { LineData } from './plot'; // Import LineData
+import {dropScale, sleepForDenoise} from "./utilities/utils.ts";
+import {useNavigate} from "react-router";
+import {MotorControls} from "./utilities/MotorControls.tsx";
 
 function App() {
     interface DataRequest {
@@ -29,16 +31,6 @@ function App() {
         timeout: Duration;
     }
 
-    /*
-    pub struct DispenseSettings {
-    sample_period: Duration,
-    cutoff_frequency: f64,
-    check_offset: f64,
-    weight: f64,
-    starting_velocity: f64,
-}
-     */
-
     const [currentStatus, updateStatus] = useState("");
     const [currentWeight, updateWeight] = useState(0);
     const [tare, updateTare] = useState(0);
@@ -47,24 +39,23 @@ function App() {
     const [samplePeriod, updateSamplePeriod] = useState(80);
     const [cutoffFrequency, updateCutoffFrequency] = useState(2);
     const [phidgetSamplePeriod, updatePhidgetSamplePeriod] = useState(40);
-    const [dispenseWeight, setDispenseWeight] = useState(50); // New state for dispense weight
-    const [maxVelocity, setMaxVelocity] = useState(0.5); // New state for starting velocity
+    const [dispenseWeight, setDispenseWeight] = useState(50);
+    const [maxVelocity, setMaxVelocity] = useState(0.5);
     const [minVelocity, setMinVelocity] = useState(0.1);
     const [checkOffset, setCheckOffset] = useState(5);
     const [timeout, setTimeout] = useState(30);
 
-
-    const [xPlotValues, setXPlotValues] = useState<number[]>([]);
-    const [yPlotValues, setYPlotValues] = useState<number[]>([]);
+    // Changed from xPlotValues and yPlotValues to plotDataSets
+    const [plotDataSets, setPlotDataSets] = useState<LineData[]>([]);
 
     const [progress, setProgress] = useState(0);
     const [isPlotting, setIsPlotting] = useState(false);
     const progressInterval = useRef<number | null>(null);
 
+    const navigate = useNavigate();
+
     function median(data: number[]): number {
-        // Consider adding a check for empty array to prevent errors
         if (data.length === 0) return 0;
-        // For a more robust median, sort the array first
         const sortedData = [...data].sort((a, b) => a - b);
         return sortedData[Math.floor(sortedData.length / 2)];
     }
@@ -83,14 +74,14 @@ function App() {
         updateStatus("Conducting trial...");
         await sleepForDenoise();
 
-        const totalTime = dataRequest.samples * (dataRequest.sample_period.secs + dataRequest.sample_period.nanos / 1_000_000_000) * 1000; // in milliseconds
+        const totalTime = dataRequest.samples * (dataRequest.sample_period.secs + dataRequest.sample_period.nanos / 1_000_000_000) * 1000;
 
         setIsPlotting(true);
         setProgress(0);
 
         const steps = 500;
         const increment = 100 / steps;
-        const intervalDuration = totalTime / steps;
+        const intervalDuration = totalTime > 0 ? totalTime / steps : 50; // Prevent division by zero
 
         return new Promise<{ readings: number[]; times: { secs: number; nanos: number }[] }>((resolve, reject) => {
             progressInterval.current = window.setInterval(() => {
@@ -111,11 +102,20 @@ function App() {
                     if (progressInterval.current !== null) {
                         window.clearInterval(progressInterval.current);
                     }
-                    // Type guard for the result
                     if (typeof result === 'object' && result !== null && 'readings' in result && Array.isArray((result as any).readings) && 'times' in result && Array.isArray((result as any).times)) {
                         const typedResult = result as { readings: number[]; times: { secs: number; nanos: number }[] };
-                        setXPlotValues(typedResult.times.map(obj => obj.secs + obj.nanos * 1e-9)); // Use 1e-9 for brevity
-                        setYPlotValues(typedResult.readings);
+
+                        // Update to set plotDataSets
+                        const newXValues = typedResult.times.map(obj => obj.secs + obj.nanos * 1e-9);
+                        const newYValues = typedResult.readings;
+                        const newLine: LineData = {
+                            xValues: newXValues,
+                            yValues: newYValues,
+                            label: `${dataRequest.trial} Data`,
+                            borderColor: "#0000FF"
+                        };
+                        setPlotDataSets([newLine]); // Replace current plot with the new line
+
                         updateStatus("Data logged!");
                         updateWeight(median(typedResult.readings));
                         resolve(typedResult);
@@ -133,6 +133,7 @@ function App() {
                 })
                 .finally(() => {
                     setIsPlotting(false);
+                    setProgress(100); // Ensure progress bar completes
                 });
         });
     }
@@ -166,17 +167,16 @@ function App() {
         }
     }
 
-    // Placeholder for dispense functionality
     async function handleDispense() {
         let dataRequest: DataRequest = {
-            trial: "Raw",
-            samples: samples,
+            trial: "Raw", // Dispense usually uses raw data for plotting its attempt
+            samples: samples, // Or a specific number of samples for dispense monitoring
             sample_period: {secs: 0, nanos: samplePeriod*1000000},
-            cutoff_frequency: cutoffFrequency
+            cutoff_frequency: null // Typically no filter during dispense plot
         }
         let dispenseSettings: DispenseSettings = {
             sample_period: {secs: 0, nanos: samplePeriod*1000000},
-            cutoff_frequency: cutoffFrequency,
+            cutoff_frequency: cutoffFrequency, // This might be for the control algorithm, not the plot
             check_offset: checkOffset,
             weight: dispenseWeight,
             max_velocity: maxVelocity,
@@ -185,18 +185,18 @@ function App() {
         }
         await dispense(dataRequest, dispenseSettings);
     }
+
     async function dispense(dataRequest: DataRequest, dispenseSettings: DispenseSettings) {
-        updateStatus("Conducting trial...");
+        updateStatus("Dispensing...");
         await sleepForDenoise();
 
-        const totalTime = dataRequest.samples * (dataRequest.sample_period.secs + dataRequest.sample_period.nanos / 1_000_000_000) * 1000; // in milliseconds
-
-        setIsPlotting(true);
+        const totalTime = dispenseSettings.timeout.secs * 1000; // Use dispense timeout for progress
+        setIsPlotting(true); // isPlotting can be reused or renamed to isBusy/isDispensing
         setProgress(0);
 
         const steps = 500;
         const increment = 100 / steps;
-        const intervalDuration = totalTime / steps;
+        const intervalDuration = totalTime > 0 ? totalTime / steps : 50; // Prevent division by zero
 
         return new Promise<{ readings: number[]; times: { secs: number; nanos: number }[] }>((resolve, reject) => {
             progressInterval.current = window.setInterval(() => {
@@ -217,39 +217,39 @@ function App() {
                     if (progressInterval.current !== null) {
                         window.clearInterval(progressInterval.current);
                     }
-                    // Type guard for the result
                     if (typeof result === 'object' && result !== null && 'readings' in result && Array.isArray((result as any).readings) && 'times' in result && Array.isArray((result as any).times)) {
                         const typedResult = result as { readings: number[]; times: { secs: number; nanos: number }[] };
-                        setXPlotValues(typedResult.times.map(obj => obj.secs + obj.nanos * 1e-9)); // Use 1e-9 for brevity
-                        setYPlotValues(typedResult.readings);
-                        updateStatus("Data logged!");
-                        updateWeight(median(typedResult.readings));
+
+                        // Update to set plotDataSets
+                        const newXValues = typedResult.times.map(obj => obj.secs + obj.nanos * 1e-9);
+                        const newYValues = typedResult.readings;
+                        const newLine: LineData = {
+                            xValues: newXValues,
+                            yValues: newYValues,
+                            label: "Dispense Attempt" // Example label for dispense
+                        };
+                        setPlotDataSets([newLine]); // Replace current plot with the new line
+
+                        updateStatus("Dispense cycle finished!");
+                        updateWeight(median(typedResult.readings)); // Update weight with final reading
                         resolve(typedResult);
                     } else {
-                        updateStatus("Unexpected data format received!");
-                        reject("Unexpected data format");
+                        updateStatus("Unexpected data format from dispense!");
+                        reject("Unexpected data format from dispense");
                     }
                 })
                 .catch(error => {
                     if (progressInterval.current !== null) {
                         window.clearInterval(progressInterval.current);
                     }
-                    updateStatus(String(error));
+                    updateStatus(`Dispense error: ${String(error)}`);
                     reject(error);
                 })
                 .finally(() => {
                     setIsPlotting(false);
+                    setProgress(100); // Ensure progress bar completes
                 });
         });
-    }
-    async function moveMotor() {
-        updateStatus("Moving Motor...");
-        try {
-            await invoke("move_motor", {});
-            updateStatus("Motor Command Sent");
-        } catch (e: any) {
-            updateStatus(String(e));
-        }
     }
 
     useEffect(() => {
@@ -267,18 +267,16 @@ function App() {
                 <p className="subtitle">Weigh scale and diagnose readings.</p>
             </header>
 
-            <section className="controls">
-                <div className="button-grid">
-                    <button onClick={async () => {await enableMotor(updateStatus)}} disabled={isPlotting}>Enable Motor</button>
-                    <button onClick={async () => { await disableMotor(updateStatus) }} disabled={isPlotting}>Disable Motor</button>
-                    <button onClick={moveMotor}>Move Motor</button>
-                </div>
-            </section>
+            <MotorControls updateStatus={updateStatus} isDisabled={isPlotting}/>
 
             <section className="controls">
                 <div className="button-grid">
                     <button onClick={rawTrial} disabled={isPlotting}>Raw</button>
-                    <button onClick={() => { /* Implement Median Trial if needed */ }} disabled={isPlotting}>Median</button>
+                    <button onClick={() => {
+                        // Example: Clear plot or implement specific median trial logic
+                        setPlotDataSets([]); // Clears the plot
+                        updateStatus("Median trial not fully implemented for plotting yet.");
+                    }} disabled={isPlotting}>Median</button>
                     <button onClick={filterTrial} disabled={isPlotting}>Filtered</button>
                 </div>
             </section>
@@ -297,7 +295,7 @@ function App() {
                         id="samples"
                         value={samples}
                         step={100}
-                        min={1} // Added min value
+                        min={1}
                         onChange={(e) => updateSamples(parseInt(e.target.value, 10))}
                         disabled={isPlotting}
                     />
@@ -306,10 +304,10 @@ function App() {
                     <label htmlFor="samplePeriod">Sample Period (ms):</label>
                     <input
                         type="number"
-                        id="samplePeriod" // Corrected id from "weight" to "samplePeriod"
+                        id="samplePeriod"
                         value={samplePeriod}
                         step={5}
-                        min={1} // Added min value
+                        min={1}
                         onChange={(e) => updateSamplePeriod(parseFloat(e.target.value))}
                         disabled={isPlotting}
                     />
@@ -321,7 +319,7 @@ function App() {
                         id="cutoffFrequency"
                         value={cutoffFrequency}
                         step={0.1}
-                        min={0.1} // Added min value
+                        min={0.1}
                         onChange={(e) => updateCutoffFrequency(parseFloat(e.target.value))}
                         disabled={isPlotting}
                     />
@@ -333,7 +331,7 @@ function App() {
                         id="phidgetSamplePeriod"
                         value={phidgetSamplePeriod}
                         step={10}
-                        min={8} // Phidgets often have a minimum interval
+                        min={8}
                         onChange={(e) => updatePhidgetSamplePeriod(parseFloat(e.target.value))}
                         disabled={isPlotting}
                     />
@@ -351,24 +349,32 @@ function App() {
                     <strong>Status:</strong> {currentStatus}
                 </div>
                 <div className="data-item">
-                    <strong>Weight:</strong> {(currentWeight-tare).toFixed(2)}g {/* Added toFixed for better display */}
+                    <strong>Weight:</strong> {(currentWeight-tare).toFixed(2)}g
                 </div>
             </section>
 
             <section className="plot-container">
-                <h2>Calibration Data</h2>
+                <h2>Readings Data</h2> {/* Changed title for clarity */}
                 <div style={{ width: '100%', maxWidth: '600px', height: '350px' }}>
-                    <Plot xValues={xPlotValues} yValues={yPlotValues} />
+                    {/* Updated Plot component usage */}
+                    <Plot dataSets={plotDataSets} />
                 </div>
             </section>
 
             <section className="controls">
                 <div className="button-grid">
                     <button onClick={checkAppData} disabled={isPlotting}>Check App Data</button>
+                    <button
+                        onClick={() => {
+                            dropScale(updateStatus).then(()=> {
+                                navigate("/")
+                            })}
+                        }
+                        disabled={isPlotting} // Disable while plotting/dispensing
+                    >Drop Scale</button>
                 </div>
-                {/* New Dispense Section */}
-                <div className="input-group" style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <label htmlFor="dispenseWeight">Dispense Weight (g):</label>
+                <div className="input-group" style={{ marginTop: '20px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px' }}>
+                    <label htmlFor="dispenseWeight">Dispense (g):</label>
                     <input
                         type="number"
                         id="dispenseWeight"
@@ -377,9 +383,9 @@ function App() {
                         min={0}
                         onChange={(e) => setDispenseWeight(parseFloat(e.target.value))}
                         disabled={isPlotting}
-                        style={{ width: '100px' }}
+                        style={{ width: '80px' }}
                     />
-                    <label htmlFor="maxVelocity">Max Velocity:</label>
+                    <label htmlFor="maxVelocity">Max Vel:</label>
                     <input
                         type="number"
                         id="maxVelocity"
@@ -388,9 +394,9 @@ function App() {
                         min={0.1}
                         onChange={(e) => setMaxVelocity(parseFloat(e.target.value))}
                         disabled={isPlotting}
-                        style={{ width: '100px' }}
+                        style={{ width: '70px' }}
                     />
-                    <label htmlFor="minVelocity">Min Velocity:</label>
+                    <label htmlFor="minVelocity">Min Vel:</label>
                     <input
                         type="number"
                         id="minVelocity"
@@ -399,9 +405,9 @@ function App() {
                         min={0.1}
                         onChange={(e) => setMinVelocity(parseFloat(e.target.value))}
                         disabled={isPlotting}
-                        style={{ width: '100px' }}
+                        style={{ width: '70px' }}
                     />
-                    <label htmlFor="checkOffset">Check Offset:</label>
+                    <label htmlFor="checkOffset">Offset:</label>
                     <input
                         type="number"
                         id="checkOffset"
@@ -410,9 +416,9 @@ function App() {
                         min={0}
                         onChange={(e) => setCheckOffset(parseFloat(e.target.value))}
                         disabled={isPlotting}
-                        style={{ width: '100px' }}
+                        style={{ width: '70px' }}
                     />
-                    <label htmlFor="timeout">Timeout:</label>
+                    <label htmlFor="timeout">Timeout(s):</label>
                     <input
                         type="number"
                         id="timeout"
@@ -421,9 +427,9 @@ function App() {
                         min={0}
                         onChange={(e) => setTimeout(parseInt(e.target.value))}
                         disabled={isPlotting}
-                        style={{ width: '100px' }}
+                        style={{ width: '70px' }}
                     />
-                    <button onClick={handleDispense} disabled={isPlotting}>Dispense</button>
+                    <button onClick={handleDispense} disabled={isPlotting} style={{ marginLeft: 'auto' }}>Dispense</button>
                 </div>
             </section>
 

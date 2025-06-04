@@ -3,7 +3,6 @@ use crate::errors::AppError;
 use async_clear_core::controller::ControllerHandle;
 use async_clear_core::motor::{ClearCoreMotor, MotorBuilder};
 use libra::scale::ConnectedScale;
-use node_diagnostics::trial::Trial as NodeTrial;
 use std::time::Duration;
 use std::{array, fmt};
 
@@ -22,13 +21,6 @@ impl AppData {
             controller: None,
         }
     }
-    // pub fn get_scale_ref(&self) -> Option<&ConnectedScale> {
-    //     if let Some(scale) = &self.scale {
-    //         Some(scale)
-    //     } else {
-    //         None
-    //     }
-    // }
     pub fn get_mut_scale_ref(&mut self) -> Option<&mut ConnectedScale> {
         self.scale.as_mut()
     }
@@ -68,14 +60,6 @@ impl AppData {
     }
     pub fn get_calibration_data(&self) -> Option<CalibrationData> {
         self.calibration_data.clone()
-    }
-
-    pub fn conduct_node_trial(&self) -> Result<(), AppError> {
-        let data = NodeTrial::default()
-            .conduct(self.scale.as_ref().ok_or(AppError::NoScale)?)
-            .map_err(AppError::NodeDiagnostics)?;
-        println!("DEBUG: {:?}", data);
-        Err(AppError::NotImplemented)
     }
 
     pub fn add_calibration_trial(

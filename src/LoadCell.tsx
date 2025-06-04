@@ -4,6 +4,7 @@ import "./App.css";
 import { useNavigate } from "react-router";
 import { sleepForDenoise } from "./utilities/utils.ts";
 import {MotorControls} from "./utilities/MotorControls.tsx";
+import Plot from "./plot.tsx";
 
 function App() {
     const [currentStatus, updateStatus] = useState("");
@@ -95,8 +96,8 @@ function App() {
     return (
         <main className={`app-container`}>
             <header>
-                <h1>Calibrate</h1>
-                <p className="subtitle">Calibrate scale</p>
+                <h1>Raw Load Cell Readings</h1>
+                {/*<p className="subtitle">Calibrate scale</p>*/}
             </header>
 
             {/* Loading bar specifically for addTrial */}
@@ -106,8 +107,8 @@ function App() {
                 </div>
             )}
 
-
             <MotorControls updateStatus={updateStatus} isDisabled={false}/>
+
             <section className="controls">
                 <div className="button-grid">
                     <button onClick={() => addTrial(samples, weight)} disabled={isAddingTrial}>Add Trial</button>
@@ -153,6 +154,13 @@ function App() {
             <section className="data-display">
                 <div className="data-item">
                     <strong>Status:</strong> {currentStatus}
+                </div>
+            </section>
+
+            <section className="plot-container">
+                <h2>Calibration Data</h2>
+                <div style={{ width: '100%', maxWidth: '600px', height: '350px' }}>
+                    {/*<Plot xValues={xPlotValues} yValues={yPlotValues} />*/}
                 </div>
             </section>
 

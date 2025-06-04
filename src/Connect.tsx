@@ -37,6 +37,18 @@ function App() {
             updateStatus(String(error));
         }
     }
+    async function setupRawLoadCells() {
+        try {
+            updateStatus("Connecting scale...");
+            await connectScale();
+            updateStatus("Connected!");
+            let result: string = await invoke("setup_raw_data_collection")
+            updateStatus(String(result))
+            navigate("/loadCell")
+        } catch (error: any) {
+            updateStatus(String(error))
+        }
+    }
     return (
     <main className={`app-container`}>
         <header>
@@ -48,6 +60,7 @@ function App() {
             <div className="button-grid">
                 <button onClick={calibrateScale}>Calibrate</button>
                 <button onClick={getCoefficients}>Use Existing Calibration</button>
+                <button onClick={setupRawLoadCells}>Read Load Cells</button>
             </div>
         </section>
         <section className="data-display">

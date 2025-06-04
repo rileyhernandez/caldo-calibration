@@ -6,7 +6,8 @@ import "./App.css";
 import {BrowserRouter, Route, Routes} from "react-router";
 import Connect from "./Connect.tsx";
 import Read from "./Read.tsx";
-import Calibrate from "./Calibrate.tsx"; // Import the chart component
+import Calibrate from "./Calibrate.tsx";
+import LoadCell from "./LoadCell.tsx"; // Import the chart component
 
 function App() {
 
@@ -16,6 +17,7 @@ function App() {
                 <Route path="/" element={<Connect />} />
                 <Route path="/read" element={<Read />} />
                 <Route path="/calibrate" element={<Calibrate />} />
+                <Route path="/loadCell" element={<LoadCell />} />
             </Routes>
         </BrowserRouter>
     );
