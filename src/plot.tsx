@@ -70,7 +70,7 @@ const Plot: React.FC<PlotProps> = ({ dataSets }) => {
                                 type: 'linear',
                                 title: {
                                     display: true,
-                                    text: 'X-Axis' // Generic X-axis title
+                                    text: 'Time (s)'
                                 }
                             },
                             y: {
@@ -78,7 +78,7 @@ const Plot: React.FC<PlotProps> = ({ dataSets }) => {
                                 beginAtZero: false, // Adjust as needed
                                 title: {
                                     display: true,
-                                    text: 'Y-Axis' // Generic Y-axis title
+                                    text: 'µV/V'
                                 }
                             },
                         },

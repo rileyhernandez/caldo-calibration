@@ -1,6 +1,6 @@
 use crate::backend::Backend;
 use crate::calibration_data::CalibrationTrial;
-use crate::data::DataRequest;
+use crate::data::{DataRequest, LoadCellDataRequest};
 use crate::dispenser::{DispenseSettings, Dispenser};
 use crate::errors::AppError;
 use crate::state::AppData;
@@ -53,12 +53,19 @@ async fn get_coefficients(state: tauri::State<'_, Mutex<AppData>>) -> Result<Str
 
 #[tauri::command(async)]
 fn plot(
-    state: tauri::State<'_, Mutex<AppData>>,
+    state: State<'_, Mutex<AppData>>,
     data_request: DataRequest,
 ) -> Result<Data, AppError> {
     let mut state = state.lock().unwrap();
     let scale = state.get_mut_scale_ref().ok_or(AppError::NoScale)?;
     data_request.conduct(scale)
+}
+#[tauri::command(async)]
+fn plot_lc(state: State<'_, Mutex<AppData>>, data_request: LoadCellDataRequest) -> Result<[Data; 4], AppError> {
+    let mut state = state.lock().unwrap();
+    let scale = state.get_mut_scale_ref().ok_or(AppError::NoScale)?;
+    let data = data_request.conduct(scale)?;
+    Ok(data)
 }
 #[tauri::command(async)]
 fn set_phidget_interval(
@@ -92,7 +99,6 @@ async fn move_motor(state: tauri::State<'_, Mutex<AppData>>) -> Result<(), AppEr
 }
 #[tauri::command]
 async fn dispense(state: tauri::State<'_, Mutex<AppData>>, dispense_settings: DispenseSettings) -> Result<Data, AppError> {
-    println!("DEBUG: {:?}", dispense_settings);
     let (scale, motor) = {
         let mut state = state.lock().unwrap();
         let scale = state.take_scale()?;
@@ -115,7 +121,7 @@ fn drop_scale(state: State<'_, Mutex<AppData>>) -> Result<(), AppError> {
 #[tauri::command(async)]
 fn setup_raw_data_collection(state: State<'_, Mutex<AppData>>) -> Result<(), AppError> {
     let mut state = state.lock().unwrap();
-    let scale = state.take_scale()?;
+    let _scale = state.take_scale()?;
     // TODO: need to implement this up a crate...
     Err(AppError::NotImplemented)
 }
@@ -138,7 +144,8 @@ pub fn run() {
             dispense,
             move_motor,
             drop_scale,
-            setup_raw_data_collection
+            setup_raw_data_collection,
+            plot_lc
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

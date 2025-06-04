@@ -14,3 +14,10 @@ export async function dropScale(updateStatus: (status: string) => void) {
 
     }
 }
+export interface Duration {
+    secs: number;
+    nanos: number;
+}
+export function durationFromMillis(millis: number): Duration {
+    return {secs: 0, nanos: millis * 1000000}
+}

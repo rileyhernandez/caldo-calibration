@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 import Plot, { LineData } from './plot'; // Import LineData
-import {dropScale, sleepForDenoise} from "./utilities/utils.ts";
+import {dropScale, Duration, durationFromMillis, sleepForDenoise} from "./utilities/utils.ts";
 import {useNavigate} from "react-router";
 import {MotorControls} from "./utilities/MotorControls.tsx";
 
@@ -17,10 +17,6 @@ function App() {
         | "Raw"
         | "Median"
         | "Filtered";
-    interface Duration {
-        secs: number;
-        nanos: number;
-    }
     interface DispenseSettings {
         sample_period: Duration;
         cutoff_frequency: number;
@@ -62,7 +58,7 @@ function App() {
 
     async function setPhidgetInterval() {
         try {
-            const result: string = await invoke("set_phidget_interval", {samplePeriod: {secs: 0, nanos: phidgetSamplePeriod*1000000}})
+            const result: string = await invoke("set_phidget_interval", {samplePeriod: durationFromMillis(phidgetSamplePeriod)})
             updateStatus("Data Interval Set!");
             console.log(result);
         } catch (e: any) {

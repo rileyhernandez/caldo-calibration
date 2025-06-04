@@ -42,8 +42,8 @@ function App() {
             updateStatus("Connecting scale...");
             await connectScale();
             updateStatus("Connected!");
-            let result: string = await invoke("setup_raw_data_collection")
-            updateStatus(String(result))
+            // let result: string = await invoke("setup_raw_data_collection")
+            // updateStatus(String(result))
             navigate("/loadCell")
         } catch (error: any) {
             updateStatus(String(error))
