@@ -94,7 +94,7 @@ async fn disable_motor(state: tauri::State<'_, Mutex<AppData>>) -> Result<(), Ap
 #[tauri::command]
 async fn move_motor(state: tauri::State<'_, Mutex<AppData>>) -> Result<(), AppError> {
     let motor = { state.lock().unwrap().get_motor(0) };
-    motor.relative_move(10.).await.map_err(AppError::Anyhow)?;
+    motor.relative_move(1.).await.map_err(AppError::Anyhow)?;
     Ok(())
 }
 #[tauri::command]
