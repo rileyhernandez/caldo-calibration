@@ -82,7 +82,7 @@ function App() {
                             updateStatus("Data logged!");
                             // Resolve with the array of typed results or the first one, depending on your needs.
                             // For now, resolving with the whole array.
-                            resolve(result as { readings: number[]; times: { secs: number; nanos: number }[] }[]);
+                            // resolve(result as { readings: number[]; times: { secs: number; nanos: number }[] }[]);
                         } else {
                             updateStatus("Unexpected data format received in array!");
                             console.error("Invalid item in result array:", result);
