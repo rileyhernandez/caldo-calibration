@@ -61,6 +61,7 @@ function App() {
                 <button onClick={calibrateScale}>Calibrate</button>
                 <button onClick={getCoefficients}>Use Existing Calibration</button>
                 <button onClick={setupRawLoadCells}>Read Load Cells</button>
+                <button onClick={() => navigate("/motor")}>Motor Control</button>
             </div>
         </section>
         <section className="data-display">

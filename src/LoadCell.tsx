@@ -1,8 +1,8 @@
 import { useState, useRef,  } from "react"; // Added useRef and useEffect
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
-// import { useNavigate } from "react-router";
-import {Duration, durationFromMillis, sleepForDenoise} from "./utilities/utils.ts";
+import { useNavigate } from "react-router";
+import {dropScale, Duration, durationFromMillis, sleepForDenoise} from "./utilities/utils.ts";
 import {MotorControls} from "./utilities/MotorControls.tsx";
 import Plot, {LineData} from "./plot.tsx";
 
@@ -15,6 +15,8 @@ function App() {
     const [isPlotting, setIsPlotting] = useState(false);
     const progressInterval = useRef<number | null>(null);
     const [plotDataSets, setPlotDataSets] = useState<LineData[]>([]);
+
+    const navigate = useNavigate();
 
     // const navigate = useNavigate();
 
@@ -122,7 +124,7 @@ function App() {
                 </div>
             )}
 
-            <MotorControls updateStatus={updateStatus} isDisabled={false}/>
+            <MotorControls updateStatus={updateStatus} isDisabled={false} showStepsInput={true}/>
 
             <section className="controls">
                 <div className="button-grid">
@@ -166,6 +168,14 @@ function App() {
                 <div style={{ width: '100%', maxWidth: '600px', height: '350px' }}>
                     {/* Updated Plot component usage */}
                     <Plot dataSets={plotDataSets} />
+                </div>
+            </section>
+            <section className="controls">
+                <div className="button-grid">
+                    <button onClick={async () => {
+                        await dropScale(updateStatus);
+                        navigate("/")
+                    }}>Go Back</button>
                 </div>
             </section>
         </main>

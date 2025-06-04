@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react"; // Added useRef and useEffe
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 import { useNavigate } from "react-router";
-import { sleepForDenoise } from "./utilities/utils.ts";
+import {dropScale, sleepForDenoise} from "./utilities/utils.ts";
 import {MotorControls} from "./utilities/MotorControls.tsx";
 
 function App() {
@@ -159,6 +159,14 @@ function App() {
             <section className="controls">
                 <div className="button-grid">
                     <button onClick={calibrateScale} disabled={isAddingTrial}>Finish Calibration</button>
+                </div>
+            </section>
+            <section className="controls">
+                <div className="button-grid">
+                    <button onClick={async () => {
+                        await dropScale(updateStatus);
+                        navigate("/")
+                    }}>Go Back</button>
                 </div>
             </section>
         </main>

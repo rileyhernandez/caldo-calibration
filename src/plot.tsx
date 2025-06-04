@@ -1,111 +1,162 @@
 // /home/riley/projects/caldo-calibration/src/plot.tsx
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Chart, registerables } from 'chart.js';
 import './App.css'; // Or your global styles
 
 // Define and export the LineData interface
-// This interface describes the data structure for a single line on the plot.
 export interface LineData {
     xValues: number[];
     yValues: number[];
-    label?: string;       // Optional label for this specific line
-    borderColor?: string; // Optional color for this specific line
+    label?: string;
+    borderColor?: string;
 }
 
-/* How to use:
-const multiLineData: LineData[] = [
-    { xValues: [1, 2, 3, 4], yValues: [10, 15, 7, 12], label: "Sensor A", borderColor: "rgba(255, 99, 132, 1)" },
-    { xValues: [1, 2, 3, 4], yValues: [5, 8, 12, 9], label: "Sensor B", borderColor: "rgba(54, 162, 235, 1)" },
-    // Add more LineData objects for more lines
-];
-
-<div style={{ width: '500px', height: '300px', marginTop: '20px' }}>
-    <Plot dataSets={multiLineData} />
-</div>
- */
+// Interface for the statistics to be displayed in the table
+interface DatasetStats {
+    label: string;
+    median: number;
+    range: number; // Changed from max and min to range
+}
 
 Chart.register(...registerables);
 
 interface PlotProps {
-    dataSets: LineData[]; // The component now accepts an array of LineData objects
+    dataSets: LineData[];
 }
+
+const calculateMedian = (arr: number[]): number => {
+    if (arr.length === 0) return NaN;
+    const sortedArr = [...arr].sort((a, b) => a - b);
+    const mid = Math.floor(sortedArr.length / 2);
+    return sortedArr.length % 2 === 0 ? (sortedArr[mid - 1] + sortedArr[mid]) / 2 : sortedArr[mid];
+};
 
 const Plot: React.FC<PlotProps> = ({ dataSets }) => {
     const chartRef = useRef<HTMLCanvasElement>(null);
     const chartInstance = useRef<Chart | null>(null);
+    // State to hold the calculated statistics for the table
+    const [statsTableData, setStatsTableData] = useState<DatasetStats[]>([]);
 
     useEffect(() => {
         const chartCanvas = chartRef.current;
+        const newStats: DatasetStats[] = [];
 
         if (chartCanvas) {
             if (chartInstance.current) {
-                chartInstance.current.destroy(); // Clear previous chart instance
+                chartInstance.current.destroy();
             }
 
             const ctx = chartCanvas.getContext('2d');
             if (ctx) {
-                // Map each LineData object from the dataSets prop to a Chart.js dataset configuration
                 const chartJSDatasets = dataSets.map(dataSet => {
-                    // For each line, map its xValues and yValues to {x, y} points
-                    const points = dataSet.xValues.map((x, index) => ({ x: x, y: dataSet.yValues[index] }));
-                    return {
-                        label: dataSet.label || 'Dataset', // Use provided label or a default
-                        data: points,
-                        borderColor: dataSet.borderColor || `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 1)`, // Use provided color or a random one
-                        tension: 0.1, // Adjust for line smoothness
-                        fill: false,  // Set to true to fill area under the line
-                    };
-                });
+                    if (dataSet.xValues.length === 0 || dataSet.yValues.length === 0) {
+                        newStats.push({
+                            label: dataSet.label || 'Unnamed Dataset',
+                            median: NaN,
+                            range: NaN, // Set range to NaN for empty/invalid data
+                        });
+                        return null;
+                    }
 
-                chartInstance.current = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        datasets: chartJSDatasets, // Pass the array of dataset configurations to Chart.js
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            x: {
-                                type: 'linear',
-                                title: {
-                                    display: true,
-                                    text: 'Time (s)'
-                                }
+                    const points = dataSet.xValues.map((x, index) => ({ x: x, y: dataSet.yValues[index] }));
+                    const datasetLabel = dataSet.label || `Dataset ${newStats.length + 1}`;
+
+                    // Calculate min, max, median for the current dataset's yValues
+                    const minY = Math.min(...dataSet.yValues);
+                    const maxY = Math.max(...dataSet.yValues);
+                    const medianY = calculateMedian(dataSet.yValues);
+                    const rangeY = maxY - minY; // Calculate range
+
+                    // Add calculated stats to our state for the table
+                    newStats.push({
+                        label: datasetLabel,
+                        median: medianY,
+                        range: rangeY, // Store range
+                    });
+
+                    return {
+                        label: datasetLabel,
+                        data: points,
+                        borderColor: dataSet.borderColor || `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 1)`,
+                        tension: 0.1,
+                        fill: false,
+                        pointRadius: 0,
+                        borderWidth: 2,
+                    };
+                }).filter(ds => ds !== null);
+
+                setStatsTableData(newStats);
+
+                if (chartJSDatasets.length > 0) {
+                    chartInstance.current = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            datasets: chartJSDatasets as any[],
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                x: {
+                                    type: 'linear',
+                                    title: { display: true, text: 'Time (s)' }
+                                },
+                                y: {
+                                    type: 'linear',
+                                    beginAtZero: false,
+                                    title: { display: true, text: 'µV/V' }
+                                },
                             },
-                            y: {
-                                type: 'linear',
-                                beginAtZero: false, // Adjust as needed
-                                title: {
-                                    display: true,
-                                    text: 'µV/V'
-                                }
+                            plugins: {
+                                legend: { display: true, position: 'top' },
+                                tooltip: { mode: 'index', intersect: false },
                             },
                         },
-                        plugins: {
-                            legend: {
-                                display: true, // Ensure legend is displayed
-                                position: 'top',
-                            },
-                            tooltip: {
-                                mode: 'index',
-                                intersect: false,
-                            },
-                        },
-                    },
-                });
+                    });
+                } else {
+                    // Optionally clear the canvas if there are no datasets to plot
+                    // ctx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
+                }
             }
         }
 
-        // Cleanup function to destroy the chart instance when the component unmounts or dependencies change
         return () => {
             if (chartInstance.current) {
                 chartInstance.current.destroy();
             }
         };
-    }, [dataSets]); // Re-run the effect if the dataSets prop changes
+    }, [dataSets]);
 
-    return <canvas ref={chartRef} />;
+    return (
+        <div>
+            <div style={{ width: '100%', height: '300px' }}> {/* Adjust height as needed */}
+                <canvas ref={chartRef} />
+            </div>
+            {statsTableData.length > 0 && (
+                <div style={{ marginTop: '20px' }}>
+                    <h4>Dataset Statistics</h4>
+                    <table className="stats-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                        <tr>
+                            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Dataset Label</th>
+                            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Median (µV/V)</th>
+                            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Range (µV/V)</th> {/* Changed header */}
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {statsTableData.map((stat, index) => (
+                            <tr key={index}>
+                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{stat.label}</td>
+                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{isNaN(stat.median) ? 'N/A' : stat.median.toFixed(2)}</td>
+                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{isNaN(stat.range) ? 'N/A' : stat.range.toFixed(2)}</td> {/* Display range */}
+                            </tr>
+                        ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+        </div>
+    );
 };
 
 export default Plot;

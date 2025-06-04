@@ -423,9 +423,17 @@ function App() {
                         min={0}
                         onChange={(e) => setTimeout(parseInt(e.target.value))}
                         disabled={isPlotting}
-                        style={{ width: '70px' }}
+                        // style={{ width: '70px' }}
                     />
                     <button onClick={handleDispense} disabled={isPlotting} style={{ marginLeft: 'auto' }}>Dispense</button>
+                </div>
+            </section>
+            <section className="controls">
+                <div className="button-grid">
+                    <button onClick={async () => {
+                        await dropScale(updateStatus);
+                        navigate("/")
+                    }}>Go Back</button>
                 </div>
             </section>
 
