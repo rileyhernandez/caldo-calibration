@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect } from "react"; // Added useRef and useEffect
+import { useState, useRef,  } from "react"; // Added useRef and useEffect
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
-import { useNavigate } from "react-router";
+// import { useNavigate } from "react-router";
 import {Duration, durationFromMillis, sleepForDenoise} from "./utilities/utils.ts";
 import {MotorControls} from "./utilities/MotorControls.tsx";
 import Plot, {LineData} from "./plot.tsx";
@@ -16,7 +16,7 @@ function App() {
     const progressInterval = useRef<number | null>(null);
     const [plotDataSets, setPlotDataSets] = useState<LineData[]>([]);
 
-    const navigate = useNavigate();
+    // const navigate = useNavigate();
 
     interface LoadCellDataRequest {
         samples: number,
@@ -36,7 +36,7 @@ function App() {
         const increment = 100 / steps;
         const intervalDuration = totalTime > 0 ? totalTime / steps : 50; // Prevent division by zero
 
-        return new Promise<{ readings: number[]; times: { secs: number; nanos: number }[] }>((resolve, reject) => {
+        return new Promise<{ readings: number[]; times: { secs: number; nanos: number }[] }>((_resolve, reject) => {
             progressInterval.current = window.setInterval(() => {
                 setProgress(prevProgress => {
                     const newProgress = prevProgress + increment;
