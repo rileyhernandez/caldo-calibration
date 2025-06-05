@@ -263,7 +263,7 @@ function App() {
                 <p className="subtitle">Weigh scale and diagnose readings.</p>
             </header>
 
-            <MotorControls updateStatus={updateStatus} isDisabled={isPlotting}/>
+            <MotorControls updateStatus={updateStatus} isDisabled={isPlotting} showStepsInput={true}/>
 
             <section className="controls">
                 <div className="button-grid">
@@ -351,7 +351,7 @@ function App() {
 
             <section className="plot-container">
                 <h2>Readings Data</h2> {/* Changed title for clarity */}
-                <div style={{ width: '100%', maxWidth: '600px', height: '350px' }}>
+                <div style={{ width: '100%', maxWidth: '600px', height: '450px' }}>
                     {/* Updated Plot component usage */}
                     <Plot dataSets={plotDataSets} />
                 </div>
@@ -369,7 +369,7 @@ function App() {
                         disabled={isPlotting} // Disable while plotting/dispensing
                     >Drop Scale</button>
                 </div>
-                <div className="input-group" style={{ marginTop: '20px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px' }}>
+                <div className="input-group" >
                     <label htmlFor="dispenseWeight">Dispense (g):</label>
                     <input
                         type="number"
@@ -379,7 +379,7 @@ function App() {
                         min={0}
                         onChange={(e) => setDispenseWeight(parseFloat(e.target.value))}
                         disabled={isPlotting}
-                        style={{ width: '80px' }}
+                        // style={{ width: '80px' }}
                     />
                     <label htmlFor="maxVelocity">Max Vel:</label>
                     <input
@@ -390,7 +390,7 @@ function App() {
                         min={0.1}
                         onChange={(e) => setMaxVelocity(parseFloat(e.target.value))}
                         disabled={isPlotting}
-                        style={{ width: '70px' }}
+                        // style={{ width: '70px' }}
                     />
                     <label htmlFor="minVelocity">Min Vel:</label>
                     <input
@@ -401,7 +401,7 @@ function App() {
                         min={0.1}
                         onChange={(e) => setMinVelocity(parseFloat(e.target.value))}
                         disabled={isPlotting}
-                        style={{ width: '70px' }}
+                        // style={{ width: '70px' }}
                     />
                     <label htmlFor="checkOffset">Offset:</label>
                     <input
@@ -412,7 +412,7 @@ function App() {
                         min={0}
                         onChange={(e) => setCheckOffset(parseFloat(e.target.value))}
                         disabled={isPlotting}
-                        style={{ width: '70px' }}
+                        // style={{ width: '70px' }}
                     />
                     <label htmlFor="timeout">Timeout(s):</label>
                     <input
@@ -425,11 +425,16 @@ function App() {
                         disabled={isPlotting}
                         // style={{ width: '70px' }}
                     />
-                    <button onClick={handleDispense} disabled={isPlotting} style={{ marginLeft: 'auto' }}>Dispense</button>
                 </div>
             </section>
             <section className="controls">
                 <div className="button-grid">
+                    <button onClick={handleDispense} disabled={isPlotting} >Dispense</button>
+                </div>
+            </section>
+            <section className="controls">
+                <div className="button-grid">
+
                     <button onClick={async () => {
                         await dropScale(updateStatus);
                         navigate("/")

@@ -126,6 +126,19 @@ fn setup_raw_data_collection(state: State<'_, Mutex<AppData>>) -> Result<(), App
     // TODO: need to implement this up a crate...
     Err(AppError::NotImplemented)
 }
+#[tauri::command(async)]
+async fn set_velo(state: State<'_, Mutex<AppData>>, velo: f64) -> Result<(), AppError> {
+    let motor = { state.lock().unwrap().get_motor(0) };
+    motor.set_velocity(velo).await.map_err(AppError::Anyhow)
+}
+#[tauri::command(async)]
+async fn mock_dispense(state: State<'_, Mutex<AppData>>, steps: f64, retract: f64) -> Result<(), AppError> {
+    let motor = { state.lock().unwrap().get_motor(0) };
+    motor.relative_move(steps/10.).await.map_err(AppError::Anyhow)?;
+    tokio::time::sleep(Duration::from_millis(10)).await;
+    motor.wait_for_move(Duration::from_millis(10)).await.map_err(AppError::Anyhow)?;
+    motor.relative_move(-retract/10.).await.map_err(AppError::Anyhow)
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -146,7 +159,9 @@ pub fn run() {
             move_motor,
             drop_scale,
             setup_raw_data_collection,
-            plot_lc
+            plot_lc,
+            set_velo,
+            mock_dispense
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

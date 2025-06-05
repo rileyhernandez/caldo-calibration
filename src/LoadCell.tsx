@@ -71,7 +71,7 @@ function App() {
                                 newLines.push({
                                     xValues: newXValues,
                                     yValues: newYValues,
-                                    label: `Load Cell ${i + 1}` // Optional: Add a label for each line
+                                    label: `Load Cell ${i}` // Optional: Add a label for each line
                                 });
                             } else {
                                 allDataValid = false;
@@ -128,7 +128,7 @@ function App() {
 
             <section className="controls">
                 <div className="button-grid">
-                    <button onClick={() => plotData({samples: samples, sample_period: durationFromMillis(samplePeriod)})} disabled={isPlotting}>test</button>
+                    <button onClick={() => plotData({samples: samples, sample_period: durationFromMillis(samplePeriod)})} disabled={isPlotting}>Run Trial</button>
                 </div>
             </section>
 
@@ -165,7 +165,7 @@ function App() {
 
             <section className="plot-container">
                 <h2>Readings Data</h2> {/* Changed title for clarity */}
-                <div style={{ width: '100%', maxWidth: '600px', height: '350px' }}>
+                <div style={{ width: '100%', maxWidth: '600px', height: '700px' }}>
                     {/* Updated Plot component usage */}
                     <Plot dataSets={plotDataSets} />
                 </div>

@@ -1,4 +1,3 @@
-use std::thread;
 use crate::errors::AppError;
 use libra::scale::ConnectedScale;
 use node_diagnostics::data::Data;

@@ -13,7 +13,7 @@ function App() {
             <header>
                 <h1>Motor Control Page</h1>
             </header>
-            <MotorControls updateStatus={updateStatus} isDisabled={false} showStepsInput={true}/>
+            <MotorControls updateStatus={updateStatus} isDisabled={false} showStepsInput={false} showMockDispense={true}/>
             <section className="data-display">
                 <div className="data-item">
                     <strong>Status:</strong> {currentStatus}
