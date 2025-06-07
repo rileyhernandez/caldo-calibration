@@ -24,7 +24,9 @@ function App() {
         weight: number;
         max_velocity: number;
         min_velocity: number;
+        retract: number;
         timeout: Duration;
+        start_buffer: Duration;
     }
 
     const [currentStatus, updateStatus] = useState("");
@@ -36,10 +38,12 @@ function App() {
     const [cutoffFrequency, updateCutoffFrequency] = useState(2);
     const [phidgetSamplePeriod, updatePhidgetSamplePeriod] = useState(40);
     const [dispenseWeight, setDispenseWeight] = useState(50);
-    const [maxVelocity, setMaxVelocity] = useState(0.5);
+    const [maxVelocity, setMaxVelocity] = useState(0.3);
     const [minVelocity, setMinVelocity] = useState(0.1);
     const [checkOffset, setCheckOffset] = useState(5);
     const [timeout, setTimeout] = useState(30);
+    const [startBuffer, setStartBuffer] = useState(500);
+    const [retract, setRetract] = useState(0.1);
 
     // Changed from xPlotValues and yPlotValues to plotDataSets
     const [plotDataSets, setPlotDataSets] = useState<LineData[]>([]);
@@ -177,7 +181,9 @@ function App() {
             weight: dispenseWeight,
             max_velocity: maxVelocity,
             min_velocity: minVelocity,
-            timeout: {secs: timeout, nanos: 0}
+            retract,
+            timeout: {secs: timeout, nanos: 0},
+            start_buffer: durationFromMillis(startBuffer)
         }
         await dispense(dataRequest, dispenseSettings);
     }
@@ -224,6 +230,7 @@ function App() {
                             yValues: newYValues,
                             label: "Dispense Attempt" // Example label for dispense
                         };
+                        console.log(newLine);
                         setPlotDataSets([newLine]); // Replace current plot with the new line
 
                         updateStatus("Dispense cycle finished!");
@@ -353,7 +360,7 @@ function App() {
                 <h2>Readings Data</h2> {/* Changed title for clarity */}
                 <div style={{ width: '100%', maxWidth: '600px', height: '450px' }}>
                     {/* Updated Plot component usage */}
-                    <Plot dataSets={plotDataSets} />
+                    <Plot dataSets={plotDataSets} yAxisUnits="Weight (g)" />
                 </div>
             </section>
 
@@ -414,6 +421,17 @@ function App() {
                         disabled={isPlotting}
                         // style={{ width: '70px' }}
                     />
+                    <label htmlFor="retract">Retract:</label>
+                    <input
+                        type="number"
+                        id="retract"
+                        value={retract}
+                        step={0.3}
+                        min={0}
+                        onChange={(e) => setRetract(parseFloat(e.target.value))}
+                        disabled={isPlotting}
+                        // style={{ width: '70px' }}
+                    />
                     <label htmlFor="timeout">Timeout(s):</label>
                     <input
                         type="number"
@@ -422,6 +440,17 @@ function App() {
                         step={10}
                         min={0}
                         onChange={(e) => setTimeout(parseInt(e.target.value))}
+                        disabled={isPlotting}
+                        // style={{ width: '70px' }}
+                    />
+                    <label htmlFor="startBuffer">Start Buffer (ms):</label>
+                    <input
+                        type="number"
+                        id="startBuffer"
+                        value={startBuffer}
+                        step={100}
+                        min={0}
+                        onChange={(e) => setStartBuffer(parseInt(e.target.value))}
                         disabled={isPlotting}
                         // style={{ width: '70px' }}
                     />

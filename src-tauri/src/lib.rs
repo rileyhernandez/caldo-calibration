@@ -108,10 +108,19 @@ async fn dispense(state: tauri::State<'_, Mutex<AppData>>, dispense_settings: Di
     };
     // let settings = DispenseSettings::default();
     motor.enable().await.map_err(AppError::Anyhow)?;
-    let (data, scale) = Dispenser::dispense(&motor, scale, dispense_settings).await?;
+    let (data, scale) = match Dispenser::dispense(&motor, scale, dispense_settings).await {
+        Ok((data, scale)) => (data, scale),
+        Err(dispense_error) => {
+            if let AppError::DispenseTimeout((data, scale)) = dispense_error {
+                println!("Dispense timed out!");
+                (data, scale)
+            } else {
+                return Err(dispense_error);
+            }
+        }
+    };
     state.lock().unwrap().return_scale(scale)?;
     Ok(data)
-    // Err(AppError::NotImplemented)
 }
 #[tauri::command(async)]
 fn drop_scale(state: State<'_, Mutex<AppData>>) -> Result<(), AppError> {

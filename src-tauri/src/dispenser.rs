@@ -44,12 +44,13 @@ impl Dispenser {
         
         let start_time = tokio::time::Instant::now();
         let mut checks_made = 0;
-        loop {
+        let result = loop {
             interval.tick().await;
             let curr_weight = filter.apply(scale.get_weight().map_err(AppError::Libra)?.get());
-            data.push(tokio::time::Instant::now() - start_time, curr_weight);
+            let now = tokio::time::Instant::now();
+            data.push(now - start_time, curr_weight);
             
-            if tokio::time::Instant::now() - last_speed_update > Duration::from_millis(25) {
+            if (tokio::time::Instant::now() - last_speed_update > Duration::from_millis(25)) && (now-start_time > settings.start_buffer) {
                 let err = (curr_weight - starting_weight + settings.weight)/settings.weight;
                 let new_speed  = err*settings.max_velocity;
                 if new_speed > settings.max_velocity {
@@ -63,28 +64,34 @@ impl Dispenser {
                 motor.relative_move(1000.).await.map_err(AppError::Anyhow)?;
             }
             
-            if curr_weight <= starting_weight - (settings.weight + settings.check_offset) {
+            if curr_weight <= starting_weight - (settings.weight + settings.check_offset) && (now-start_time > settings.start_buffer) {
                 checks_made += 1;
                 motor.abrupt_stop().await.map_err(AppError::Anyhow)?;
+                tokio::time::sleep(Duration::from_millis(50)).await;
                 let med_weight = scale
-                    .get_median_weight(10, settings.sample_period)
+                    .get_median_weight(100, settings.sample_period)
                     .map_err(AppError::Libra)?
                     .get();
-                if (med_weight > starting_weight - settings.weight) | (checks_made >= 3) {
-                    break Ok((data, scale));
+                data.push(tokio::time::Instant::now() - start_time, med_weight);
+                if (med_weight <= starting_weight - settings.weight) | (checks_made >= 3) {
+                    break Ok((data, scale))
                 } else {
                     filter = Filter::new(sample_rate, settings.cutoff_frequency);
                     filter.apply(med_weight);
                     motor.relative_move(1000.).await.map_err(AppError::Anyhow)?;
-                    continue
+                    // continue
                 }
             }
             if tokio::time::Instant::now() - start_time > settings.timeout {
                 motor.abrupt_stop().await.map_err(AppError::Anyhow)?;
-                break Ok((data, scale))
+                break Err(AppError::DispenseTimeout((data, scale)))
             }
             checks_made = 0;
-        }
+        };
+        motor.relative_move(-settings.retract).await.map_err(AppError::Anyhow)?;
+        tokio::time::sleep(Duration::from_millis(25)).await;
+        motor.wait_for_move(Duration::from_millis(10)).await.map_err(AppError::Anyhow)?;
+        result
     }
 }
 #[derive(Deserialize, Debug)]
@@ -95,7 +102,9 @@ pub struct DispenseSettings {
     weight: f64,
     max_velocity: f64,
     min_velocity: f64,
+    retract: f64,
     timeout: Duration,
+    start_buffer: Duration
 }
 impl Default for DispenseSettings {
     fn default() -> Self {
@@ -106,7 +115,9 @@ impl Default for DispenseSettings {
             weight: 50.,
             max_velocity: 0.5,
             min_velocity: 0.1,
-            timeout: Duration::from_secs(30)
+            retract: 0.1,
+            timeout: Duration::from_secs(30),
+            start_buffer: Duration::from_millis(500)
         }
     }
 }

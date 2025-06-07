@@ -22,6 +22,8 @@ Chart.register(...registerables);
 
 interface PlotProps {
     dataSets: LineData[];
+    xAxisUnits?: string;
+    yAxisUnits?: string;
 }
 
 const calculateMedian = (arr: number[]): number => {
@@ -31,7 +33,7 @@ const calculateMedian = (arr: number[]): number => {
     return sortedArr.length % 2 === 0 ? (sortedArr[mid - 1] + sortedArr[mid]) / 2 : sortedArr[mid];
 };
 
-const Plot: React.FC<PlotProps> = ({ dataSets }) => {
+const Plot: React.FC<PlotProps> = ({ dataSets, xAxisUnits = 'Time (s)', yAxisUnits = 'µV/V' }) => {
     const chartRef = useRef<HTMLCanvasElement>(null);
     const chartInstance = useRef<Chart | null>(null);
     // State to hold the calculated statistics for the table
@@ -99,12 +101,12 @@ const Plot: React.FC<PlotProps> = ({ dataSets }) => {
                             scales: {
                                 x: {
                                     type: 'linear',
-                                    title: { display: true, text: 'Time (s)' }
+                                    title: { display: true, text: xAxisUnits }
                                 },
                                 y: {
                                     type: 'linear',
                                     beginAtZero: false,
-                                    title: { display: true, text: 'µV/V' }
+                                    title: { display: true, text: yAxisUnits }
                                 },
                             },
                             plugins: {
@@ -125,7 +127,7 @@ const Plot: React.FC<PlotProps> = ({ dataSets }) => {
                 chartInstance.current.destroy();
             }
         };
-    }, [dataSets]);
+    }, [dataSets, xAxisUnits, yAxisUnits]);
 
     return (
         <div>
@@ -139,8 +141,8 @@ const Plot: React.FC<PlotProps> = ({ dataSets }) => {
                         <thead>
                         <tr>
                             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Dataset Label</th>
-                            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Median (µV/V)</th>
-                            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Range (µV/V)</th> {/* Changed header */}
+                            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>{`Median [${yAxisUnits}]`}</th>
+                            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>{`Range [${yAxisUnits}]`}</th>
                         </tr>
                         </thead>
                         <tbody>

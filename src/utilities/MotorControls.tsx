@@ -76,7 +76,6 @@ export const MotorControls: React.FC<MotorControlsProps> = ({ updateStatus, isDi
                         type="number"
                         id="motorSteps"
                         value={steps}
-                        min={1}
                         onChange={(e) => setSteps(parseFloat(e.target.value))}
                         disabled={isDisabled}
                     />
