@@ -1,16 +1,19 @@
 use crate::calibration_data::{CalibrationData, CalibrationTrial, Coefficients};
 use crate::errors::AppError;
 use async_clear_core::controller::ControllerHandle;
-use async_clear_core::motor::{ClearCoreMotor, MotorBuilder};
+use async_clear_core::motor::{MotorBuilder};
 use libra::scale::ConnectedScale;
 use std::time::Duration;
-use std::{array, fmt};
+use std::{array, fmt, thread};
+use control_components::{controllers::clear_core};
+use control_components::components::clear_core_motor::ClearCoreMotor;
 
 pub struct AppData {
     scale: Option<ConnectedScale>,
     coefficients: Option<[f64; 4]>,
     calibration_data: Option<CalibrationData>,
     controller: Option<ControllerHandle>,
+    clear_core: Option<clear_core::Controller>,
 }
 impl AppData {
     pub fn new() -> Self {
@@ -19,6 +22,7 @@ impl AppData {
             coefficients: None,
             calibration_data: None,
             controller: None,
+            clear_core: None
         }
     }
     pub fn get_mut_scale_ref(&mut self) -> Option<&mut ConnectedScale> {
@@ -81,7 +85,32 @@ impl AppData {
         ))
     }
     pub fn get_motor(&mut self, id: usize) -> ClearCoreMotor {
-        self.get_controller().get_motor(id)
+        if self.clear_core.is_none() {
+            let (controller, controller_client) = clear_core::Controller::with_client(
+                "192.168.1.12:8888",
+                &[
+                    clear_core::MotorBuilder {
+                        id: 0,
+                        scale: 800,
+                    },
+                    clear_core::MotorBuilder {
+                        id: 1,
+                        scale: 800,
+                    },
+                ],
+            );
+            tauri::async_runtime::spawn(async move {
+                if let Err(_) = controller_client.await {
+                    println!("No motor/io controller connected...");
+                }
+            });
+            thread::sleep(Duration::from_secs(5));
+            let motor = controller.get_motor(id);
+            self.clear_core.replace(controller);
+            motor
+        } else {
+            self.clear_core.clone().unwrap().get_motor(id)
+        }
     }
     pub fn take_scale(&mut self) -> Result<ConnectedScale, AppError> {
         self.scale.take().ok_or(AppError::NoScale)

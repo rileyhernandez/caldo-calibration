@@ -27,6 +27,7 @@ function App() {
         retract: number;
         timeout: Duration;
         start_buffer: Duration;
+        check_samples: number;
     }
 
     const [currentStatus, updateStatus] = useState("");
@@ -183,7 +184,8 @@ function App() {
             min_velocity: minVelocity,
             retract,
             timeout: {secs: timeout, nanos: 0},
-            start_buffer: durationFromMillis(startBuffer)
+            start_buffer: durationFromMillis(startBuffer),
+            check_samples: 50,
         }
         await dispense(dataRequest, dispenseSettings);
     }

@@ -13,10 +13,6 @@ pub enum AppError {
     NoScale,
     #[error("Scale Error: {0}")]
     Libra(ScaleError),
-    // #[error("Phidget Error: {0}")]
-    // Phidget(PhidgetError),
-    // #[error("Must Calibrate Scale to Use!")]
-    // NotCalibrated,
     #[error("Must have nonzero samples!")]
     ZeroSamples,
     #[error("HTTP Request Error: {0}")]
@@ -32,9 +28,7 @@ pub enum AppError {
     #[error("Scale already exists!")]
     ScaleExists,
     #[error("Other Error: {0}")]
-    Other(String),
-    #[error("Dispense Timed Out!")]
-    DispenseTimeout((Data, ConnectedScale))
+    Other(String)
 }
 impl Serialize for AppError {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -58,14 +52,14 @@ impl Debug for AppError {
             AppError::NodeDiagnostics(err) => f.debug_tuple("NodeDiagnostics").field(err).finish(),
             AppError::ScaleExists => write!(f, "ScaleExists"),
             AppError::Other(s) => f.debug_tuple("Other").field(s).finish(),
-            AppError::DispenseTimeout((data, _scale)) => {
-                // Assuming Data implements Debug.
-                // For _scale, provide a placeholder as it doesn't implement Debug.
-                f.debug_struct("DispenseTimeout")
-                    .field("data", data)
-                    .field("scale", &"<ConnectedScale (not Debug)>")
-                    .finish()
-            }
+            // AppError::DispenseTimeout((data, _scale)) => {
+            //     // Assuming Data implements Debug.
+            //     // For _scale, provide a placeholder as it doesn't implement Debug.
+            //     f.debug_struct("DispenseTimeout")
+            //         .field("data", data)
+            //         .field("scale", &"<ConnectedScale (not Debug)>")
+            //         .finish()
+            // }
         }
     }
 }

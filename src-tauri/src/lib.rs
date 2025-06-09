@@ -1,7 +1,8 @@
 use crate::backend::Backend;
 use crate::calibration_data::CalibrationTrial;
 use crate::data::{DataRequest, LoadCellDataRequest};
-use crate::dispenser::{DispenseSettings, Dispenser};
+// use crate::dispenser::{DispenseSettings, Dispenser};
+use node_diagnostics::dispenser::{DispenseSettings, DispenseOutcome};
 use crate::errors::AppError;
 use crate::state::AppData;
 use node_diagnostics::data::Data;
@@ -84,18 +85,20 @@ fn set_phidget_interval(
 #[tauri::command]
 async fn enable_motor(state: tauri::State<'_, Mutex<AppData>>) -> Result<(), AppError> {
     let motor = { state.lock().unwrap().get_motor(0) };
-    motor.enable().await.map_err(AppError::Anyhow)
+    motor.enable().await.expect("Clear core bug");
+    Ok(())
 }
 #[tauri::command]
 async fn disable_motor(state: tauri::State<'_, Mutex<AppData>>) -> Result<(), AppError> {
     let motor = { state.lock().unwrap().get_motor(0) };
-    motor.disable().await.map_err(AppError::Anyhow)?;
-    motor.clear_alerts().await.map_err(AppError::Anyhow)
+    motor.disable().await;
+    motor.clear_alerts().await;
+    Ok(())
 }
 #[tauri::command]
 async fn move_motor(state: tauri::State<'_, Mutex<AppData>>, steps: f64) -> Result<(), AppError> {
     let motor = { state.lock().unwrap().get_motor(0) };
-    motor.relative_move(steps).await.map_err(AppError::Anyhow)?;
+    motor.relative_move(steps).await.expect("Clear core bug");
     Ok(())
 }
 #[tauri::command]
@@ -106,18 +109,12 @@ async fn dispense(state: tauri::State<'_, Mutex<AppData>>, dispense_settings: Di
         let motor = state.get_motor(0);
         (scale, motor)
     };
-    // let settings = DispenseSettings::default();
-    motor.enable().await.map_err(AppError::Anyhow)?;
-    let (data, scale) = match Dispenser::dispense(&motor, scale, dispense_settings).await {
-        Ok((data, scale)) => (data, scale),
-        Err(dispense_error) => {
-            if let AppError::DispenseTimeout((data, scale)) = dispense_error {
-                println!("Dispense timed out!");
-                (data, scale)
-            } else {
-                return Err(dispense_error);
-            }
-        }
+    let (data, scale) = match DispenseOutcome::dispense(&motor, scale, dispense_settings).await.map_err(AppError::NodeDiagnostics)? {
+        DispenseOutcome::Success(data, scale) => (data, scale),
+        DispenseOutcome::Timeout(data, scale) => { 
+            println!("Dispense timed out!");
+            (data, scale )
+        },
     };
     state.lock().unwrap().return_scale(scale)?;
     Ok(data)
@@ -138,15 +135,17 @@ fn setup_raw_data_collection(state: State<'_, Mutex<AppData>>) -> Result<(), App
 #[tauri::command(async)]
 async fn set_velo(state: State<'_, Mutex<AppData>>, velo: f64) -> Result<(), AppError> {
     let motor = { state.lock().unwrap().get_motor(0) };
-    motor.set_velocity(velo).await.map_err(AppError::Anyhow)
+    motor.set_velocity(velo).await;
+    Ok(())
 }
 #[tauri::command(async)]
 async fn mock_dispense(state: State<'_, Mutex<AppData>>, steps: f64, retract: f64) -> Result<(), AppError> {
     let motor = { state.lock().unwrap().get_motor(0) };
-    motor.relative_move(steps/10.).await.map_err(AppError::Anyhow)?;
+    motor.relative_move(steps/10.).await.expect("Clear core bug");
     tokio::time::sleep(Duration::from_millis(10)).await;
-    motor.wait_for_move(Duration::from_millis(10)).await.map_err(AppError::Anyhow)?;
-    motor.relative_move(-retract/10.).await.map_err(AppError::Anyhow)
+    motor.wait_for_move(Duration::from_millis(10)).await.expect("Clear core bug");
+    motor.relative_move(-retract/10.).await.expect("Clear core bug");
+    Ok(())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
