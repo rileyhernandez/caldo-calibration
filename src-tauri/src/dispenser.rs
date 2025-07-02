@@ -1,20 +1,20 @@
-use crate::errors::AppError;
-use async_clear_core::{motor::ClearCoreMotor};
-use libra::scale::ConnectedScale;
-use node_diagnostics::{data::Data, filter::Filter};
-use std::time::Duration;
-use serde::Deserialize;
+// use crate::errors::AppError;
+// use async_clear_core::{motor::ClearCoreMotor};
+// use libra::scale::ConnectedScale;
+// use node_diagnostics::{data::Data, filter::Filter};
+// use std::time::Duration;
+// use serde::Deserialize;
 
-pub struct Dispenser {}
-
-impl Dispenser {
-    pub async fn dispense(
-        motor: &ClearCoreMotor,
-        scale: ConnectedScale,
-        settings: DispenseSettings,
-    ) -> Result<(Data, ConnectedScale), AppError> {
-        Err(AppError::NotImplemented)
-    }
+// pub struct Dispenser {}
+// 
+// impl Dispenser {
+//     pub async fn dispense(
+//         motor: &ClearCoreMotor,
+//         scale: ConnectedScale,
+//         settings: DispenseSettings,
+//     ) -> Result<(Data, ConnectedScale), AppError> {
+//         Err(AppError::NotImplemented)
+//     }
     //     motor
     //         .set_velocity(settings.max_velocity)
     //         .await
@@ -94,31 +94,31 @@ impl Dispenser {
     //     motor.wait_for_move(Duration::from_millis(10)).await.map_err(AppError::Anyhow)?;
     //     result
     // }
-}
-#[derive(Deserialize, Debug)]
-pub struct DispenseSettings {
-    sample_period: Duration,
-    cutoff_frequency: f64,
-    check_offset: f64,
-    weight: f64,
-    max_velocity: f64,
-    min_velocity: f64,
-    retract: f64,
-    timeout: Duration,
-    start_buffer: Duration
-}
-impl Default for DispenseSettings {
-    fn default() -> Self {
-        Self {
-            sample_period: Duration::from_millis(80),
-            cutoff_frequency: 2.0,
-            check_offset: 5.,
-            weight: 50.,
-            max_velocity: 0.5,
-            min_velocity: 0.1,
-            retract: 0.1,
-            timeout: Duration::from_secs(30),
-            start_buffer: Duration::from_millis(500)
-        }
-    }
-}
+// }
+// #[derive(Deserialize, Debug)]
+// pub struct DispenseSettings {
+//     sample_period: Duration,
+//     cutoff_frequency: f64,
+//     check_offset: f64,
+//     weight: f64,
+//     max_velocity: f64,
+//     min_velocity: f64,
+//     retract: f64,
+//     timeout: Duration,
+//     start_buffer: Duration
+// }
+// impl Default for DispenseSettings {
+//     fn default() -> Self {
+//         Self {
+//             sample_period: Duration::from_millis(80),
+//             cutoff_frequency: 2.0,
+//             check_offset: 5.,
+//             weight: 50.,
+//             max_velocity: 0.5,
+//             min_velocity: 0.1,
+//             retract: 0.1,
+//             timeout: Duration::from_secs(30),
+//             start_buffer: Duration::from_millis(500)
+//         }
+//     }
+// }

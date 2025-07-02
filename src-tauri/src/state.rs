@@ -1,10 +1,8 @@
 use crate::calibration_data::{CalibrationData, CalibrationTrial, Coefficients};
 use crate::errors::AppError;
-use async_clear_core::controller::ControllerHandle;
-use async_clear_core::motor::{MotorBuilder};
 use libra::scale::ConnectedScale;
 use std::time::Duration;
-use std::{array, fmt, thread};
+use std::{fmt, thread};
 use control_components::{controllers::clear_core};
 use control_components::components::clear_core_motor::ClearCoreMotor;
 
@@ -12,7 +10,6 @@ pub struct AppData {
     scale: Option<ConnectedScale>,
     coefficients: Option<[f64; 4]>,
     calibration_data: Option<CalibrationData>,
-    controller: Option<ControllerHandle>,
     clear_core: Option<clear_core::Controller>,
 }
 impl AppData {
@@ -21,7 +18,6 @@ impl AppData {
             scale: None,
             coefficients: None,
             calibration_data: None,
-            controller: None,
             clear_core: None
         }
     }
@@ -77,12 +73,6 @@ impl AppData {
         } else {
             Err(AppError::NoScale)
         }
-    }
-    fn get_controller(&mut self) -> &ControllerHandle {
-        self.controller.get_or_insert(ControllerHandle::new(
-            "192.168.1.12:8888",
-            array::from_fn(|_| MotorBuilder { id: 0, scale: 800 }),
-        ))
     }
     pub fn get_motor(&mut self, id: usize) -> ClearCoreMotor {
         if self.clear_core.is_none() {

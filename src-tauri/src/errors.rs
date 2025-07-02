@@ -1,10 +1,8 @@
-use libra::scale::{ConnectedScale, ScaleError};
+use libra::scale::ScaleError;
 use log::error;
 // use phidget::ReturnCode;
-use anyhow;
 use serde::Serialize;
 use std::fmt::Debug;
-use node_diagnostics::data::Data;
 use thiserror::Error;
 
 #[derive(Error, )]
@@ -21,8 +19,8 @@ pub enum AppError {
     Serde(serde_json::Error),
     #[error("This feature is not yet implemented!")]
     NotImplemented,
-    #[error("")]
-    Anyhow(anyhow::Error),
+    // #[error("")]
+    // Anyhow(anyhow::Error),
     #[error("Node Diagnostics Error: {0}")]
     NodeDiagnostics(node_diagnostics::error::Error),
     #[error("Scale already exists!")]
@@ -48,7 +46,7 @@ impl Debug for AppError {
             AppError::Reqwest(err) => f.debug_tuple("Reqwest").field(err).finish(),
             AppError::Serde(err) => f.debug_tuple("Serde").field(err).finish(),
             AppError::NotImplemented => write!(f, "NotImplemented"),
-            AppError::Anyhow(err) => f.debug_tuple("Anyhow").field(err).finish(),
+            // AppError::Anyhow(err) => f.debug_tuple("Anyhow").field(err).finish(),
             AppError::NodeDiagnostics(err) => f.debug_tuple("NodeDiagnostics").field(err).finish(),
             AppError::ScaleExists => write!(f, "ScaleExists"),
             AppError::Other(s) => f.debug_tuple("Other").field(s).finish(),

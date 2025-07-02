@@ -35,7 +35,7 @@ function App() {
     const [tare, updateTare] = useState(0);
 
     const [samples, updateSamples] = useState(200);
-    const [samplePeriod, updateSamplePeriod] = useState(80);
+    const [samplePeriod, updateSamplePeriod] = useState(40);
     const [cutoffFrequency, updateCutoffFrequency] = useState(2);
     const [phidgetSamplePeriod, updatePhidgetSamplePeriod] = useState(40);
     const [dispenseWeight, setDispenseWeight] = useState(50);
@@ -43,8 +43,8 @@ function App() {
     const [minVelocity, setMinVelocity] = useState(0.1);
     const [checkOffset, setCheckOffset] = useState(5);
     const [timeout, setTimeout] = useState(30);
-    const [startBuffer, setStartBuffer] = useState(500);
-    const [retract, setRetract] = useState(0.1);
+    const [startBuffer, setStartBuffer] = useState(1500);
+    const [retract, setRetract] = useState(0.3);
 
     // Changed from xPlotValues and yPlotValues to plotDataSets
     const [plotDataSets, setPlotDataSets] = useState<LineData[]>([]);
